@@ -1,0 +1,11 @@
+.statusIndicator {
+    text-transform: uppercase;
+}
+
+.statusIndicator.true {
+    color: green;
+}
+
+.statusIndicator.false {
+    color: red;
+}

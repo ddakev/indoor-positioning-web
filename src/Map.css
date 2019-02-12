@@ -1,0 +1,17 @@
+.mapCoordArea {
+    position: absolute;
+    height: 75%;
+    width: 64%;
+    margin-left: 6%;
+    margin-bottom: 6%;
+    bottom: 0;
+    left: 0;
+}
+
+.floorplanContainer {
+    position: relative;
+}
+
+.floorplanContainer>img {
+    width: 100%;
+}

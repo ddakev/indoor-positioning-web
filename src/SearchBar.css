@@ -1,0 +1,23 @@
+.searchBar {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.searchBarInput {
+    border: 1px solid rgb(200, 200, 200);
+    font-size: 14pt;
+    padding: 8px 10px 8px 30px;
+    border-radius: 5px;
+    display: inline-block;
+    outline: none;
+    margin-left: -28px;
+}
+
+.searchBar img {
+    width: 20px;
+    height: 20px;
+    z-index: 1;
+    margin-left: 8px;
+}
