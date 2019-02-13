@@ -1,61 +1,41 @@
 import React, { Component } from 'react';
+import io from 'socket.io-client';
 import './App.css';
 import SearchBar from './SearchBar.js';
 import EmployeeTable from './EmployeeTable.js';
 import Map from './Map.js';
+import config from './config.js';
 
-var dummyEmployeeData = [];
-
-for(let i=0; i<100; i++) {
-  let newEmp = {
-    "name": "EmployeeName" + i,
-    "id": i
-  };
-  newEmp.hardhat = {
-    "status": 1,
-    "ousideBounds": 0,
-    "coords": {"x": Math.random(), "y": Math.random()}
-  };
-  newEmp.leftBoot = {
-    "status": 1,
-    "ousideBounds": 0,
-    "coords": {"x": Math.random(), "y": Math.random()}
-  };
-  newEmp.rightBoot = {
-    "status": 1,
-    "ousideBounds": 0,
-    "coords": {"x": Math.random(), "y": Math.random()}
-  };
-  if(Math.random() < 0.05) {
-    newEmp.hardhat.status = 0;
-  }
-  if(Math.random() < 0.05) {
-    newEmp.hardhat.outsideBounds = 1;
-  }
-  if(Math.random() < 0.05) {
-    newEmp.leftBoot.status = 0;
-  }
-  if(Math.random() < 0.05) {
-    newEmp.leftBoot.outsideBounds = 1;
-  }
-  if(Math.random() < 0.05) {
-    newEmp.rightBoot.status = 0;
-  }
-  if(Math.random() < 0.05) {
-    newEmp.rightBoot.outsideBounds = 1;
-  }
-  dummyEmployeeData.push(newEmp);
-}
 
 class App extends Component {
   constructor() {
     super();
+    this.changeSelectedId = this.changeSelectedId.bind(this);
+    this.updateFilter = this.updateFilter.bind(this);
+
     this.state = {
       selectedId: null,
       filter: emp => true,
+      employeeData: [],
     };
-    this.changeSelectedId = this.changeSelectedId.bind(this);
-    this.updateFilter = this.updateFilter.bind(this);
+  }
+
+  componentDidMount() {
+    // Get current data from server
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => {
+      this.setState({employeeData: JSON.parse(xhr.responseText)})
+    };
+    xhr.open('GET', config.href + ":" + config.port + "/employeeData");
+    xhr.send();
+
+    // Get updates on tag locations and statuses from server
+    const socket = io(config.href + ":" + config.port);
+    socket.on('tagLocationUpdate', (msg) => {
+      let dummyEmployeeData = this.state.employeeData;
+      dummyEmployeeData[msg.id][msg.name].coords = {x: msg.x, y: msg.y};
+      this.setState({employeeData: dummyEmployeeData});
+    });
   }
 
   changeSelectedId(id) {
@@ -110,14 +90,14 @@ class App extends Component {
           <div className="leftPane">
             <SearchBar onChange={this.updateFilter}/>
             <EmployeeTable
-              data={dummyEmployeeData.filter(this.state.filter)}
+              data={this.state.employeeData.filter(this.state.filter)}
               selectedId={this.state.selectedId}
               onSelectedChange={this.changeSelectedId}
               />
           </div>
           <div className = "rightPane">
             <Map 
-              data={dummyEmployeeData.filter(this.state.filter)}
+              data={this.state.employeeData.filter(this.state.filter)}
               selectedId={this.state.selectedId}
               onSelectedChange={this.changeSelectedId}
               />
