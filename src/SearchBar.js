@@ -15,7 +15,7 @@ class SearchBar extends Component {
     render() {
         return (
             <div className="searchBar">
-                <img src="search.png" />
+                <img src="search.png" alt="Search"/>
                 <input
                     type="text"
                     className="searchBarInput"

@@ -3,13 +3,9 @@ import './EmployeeRow.css';
 import StatusIndicator from './StatusIndicator.js';
 
 class EmployeeRow extends Component {
-    constructor(props) {
-        super(props);
-    }
-
     render() {
         return (
-                <label for={"row" + this.props.id} id={"employee" + this.props.id}>
+                <label htmlFor={"row" + this.props.id} id={"employee" + this.props.id}>
                     <td>{this.props.name}</td>
                     <td>{this.props.id}</td>
                     <td>

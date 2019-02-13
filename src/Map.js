@@ -3,14 +3,10 @@ import './Map.css';
 import MapIndicator from './MapIndicator.js';
 
 class Map extends Component {
-    constructor(props) {
-        super(props);
-    }
-
     render() {
         return (
             <div className="floorplanContainer">
-                <img src="floorplan.jpg" />
+                <img src="floorplan.jpg"  alt="Floorplan" />
                 <div className="mapCoordArea">
                     {
                         this.props.data.map((employee, index) => {
@@ -24,6 +20,7 @@ class Map extends Component {
                                         desc={{name: employee.name, equipment: "Hardhat"}}
                                         selected={this.props.selectedId === employee.id}
                                         onSelected={id => this.props.onSelectedChange(id)}
+                                        key={index + "0"}
                                         />
                                 );
                             }
@@ -36,6 +33,7 @@ class Map extends Component {
                                         desc={{name: employee.name, equipment: "Left Boot"}}
                                         selected={this.props.selectedId === employee.id}
                                         onSelected={id => this.props.onSelectedChange(id)}
+                                        key={index + "1"}
                                         />
                                 );
                             }
@@ -48,6 +46,7 @@ class Map extends Component {
                                         desc={{name: employee.name, equipment: "Right Boot"}}
                                         selected={this.props.selectedId === employee.id}
                                         onSelected={id => this.props.onSelectedChange(id)}
+                                        key={index + "2"}
                                         />
                                 );
                             }

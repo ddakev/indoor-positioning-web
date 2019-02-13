@@ -18,13 +18,15 @@ class EmployeeTable extends Component {
     render() {
         return (
             <table className="employeeTable">
-                <tr className="employeeTableHeader">
-                    <th>Name</th>
-                    <th>ID</th>
-                    <th>Hardhat</th>
-                    <th>Left Boot</th>
-                    <th>Right Boot</th>
-                </tr>
+                <thead>
+                    <tr className="employeeTableHeader">
+                        <th>Name</th>
+                        <th>ID</th>
+                        <th>Hardhat</th>
+                        <th>Left Boot</th>
+                        <th>Right Boot</th>
+                    </tr>
+                </thead>
                 <tbody>
                 {
                     this.props.data.map((employee, index) => {
@@ -37,6 +39,7 @@ class EmployeeTable extends Component {
                                 style={{display: 'none'}}
                                 checked={this.props.selectedId === employee.id}
                                 onChange={this.handleNewSelected}
+                                key={"input" + index}
                                 />,
                             <EmployeeRow
                                 name={employee.name}
@@ -44,6 +47,7 @@ class EmployeeTable extends Component {
                                 hardhatStatus={employee.hardhat.status || employee.hardhat.outsideBounds}
                                 leftBootStatus={employee.leftBoot.status || employee.leftBoot.outsideBounds}
                                 rightBootStatus={employee.rightBoot.status || employee.rightBoot.outsideBounds}
+                                key={"row" + index}
                                 />
                         );
                         return (

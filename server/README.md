@@ -3,7 +3,7 @@ A tiny webserver using express and websockets to test the web app
 ## How to use
 
  - run `npm install`, then `node server` in indoor-positioning-web/server/
- - edit indoor-positioning-web/src/config.js with your IPv4 address (run `ipcofing` to find out your IPv4)
+ - edit indoor-positioning-web/src/config.js with your IPv4 address (run `ipconfig` to find out your IPv4)
  - make sure the React server is running; if not run `npm start` in indoor-positioning-web/
 
 ## What to expect

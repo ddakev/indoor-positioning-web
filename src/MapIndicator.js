@@ -2,10 +2,6 @@ import React, { Component } from 'react';
 import './MapIndicator.css';
 
 class MapIndicator extends Component {
-    constructor(props) {
-        super(props);
-    }
-
     render() {
         const inlineStyle = {
             bottom: this.props.y * 100 + "%",
