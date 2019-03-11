@@ -1,0 +1,42 @@
+.DashboardView {
+    display: flex;
+    flex-flow: column nowrap;
+    height: 100%;
+    overflow: hidden;
+}
+  
+.DashboardView .header {
+    min-height: 75px;
+    flex-shrink: 0;
+    padding: 15px 20px;
+    background: rgb(70, 70, 70);
+    box-sizing: border-box;
+}
+  
+.DashboardView .header h1 {
+    color: white;
+    margin: 0;
+}
+  
+.DashboardView .content {
+    display: flex;
+    flex-flow: row nowrap;
+    flex: 1;
+    min-height: 0;
+}
+  
+.DashboardView .leftPane {
+    padding: 20px;
+    overflow: auto;
+    flex-shrink: 0;
+}
+  
+.DashboardView .rightPane {
+    flex-grow: 1;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+  

@@ -1,41 +1,30 @@
 .App {
-  display: flex;
-  flex-flow: column nowrap;
-  height: 100%;
-  overflow: hidden;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
-.header {
-  min-height: 75px;
-  flex-shrink: 0;
-  padding: 15px 20px;
-  background: rgb(70, 70, 70);
-  box-sizing: border-box;
+.App .button {
+    display: inline-block;
+    padding: 10px 25px;
+    background: rgb(119, 187, 255);
+    border-radius: 8px;
+    color: white;
+    text-transform: uppercase;
+    box-shadow: 0px 1px 8px -3px rgba(0, 0, 0, 0.4);
+    transition: box-shadow 0.2s;
+    cursor: pointer;
 }
 
-.header h1 {
-  color: white;
-  margin: 0;
+.App .button:hover {
+    box-shadow: 0px 3px 8px -3px rgba(0, 0, 0, 0.4);
 }
 
-.content {
-  display: flex;
-  flex-flow: row nowrap;
-  flex: 1;
-  min-height: 0;
+.App .link-button {
+    display: inline;
+    color: rgb(78, 137, 197);
 }
 
-.leftPane {
-  padding: 20px;
-  overflow: auto;
-  flex-shrink: 0;
-}
-
-.rightPane {
-  flex-grow: 1;
-  display: flex;
-  flex-flow: row nowrap;
-  justify-content: center;
-  align-items: center;
-  position: relative;
+.App .link-button>img {
+    height: 1em;
 }

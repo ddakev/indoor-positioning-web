@@ -1,0 +1,94 @@
+.mapEditView {
+    display: flex;
+    flex-flow: column nowrap;
+    height: 100%;
+    width: 100%;
+    align-items: stretch;
+}
+
+.mapEditView .titleBar {
+    height: 60px;
+    background: rgb(70, 70, 70);
+    color: rgb(240, 245, 250);
+    padding: 0px 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    z-index: 2;
+    flex-shrink: 0;
+}
+
+.mapEditVIew .titleBar h1 {
+    margin: 0;
+    font-size: 20pt;
+    font-weight: normal;
+}
+
+.mapEditView .toolBar {
+    height: 50px;
+    background: rgb(231, 237, 244);
+    box-shadow: 0px 0px 15px -6px black;
+    z-index: 1;
+    flex-shrink: 0;
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: stretch;
+    justify-content: space-between;
+}
+
+.mapEditView .toolbar-right {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.mapEditView .toolbar-left {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    margin-left: 10px;
+}
+
+.mapEditView .toolBar .saveButton {
+    margin: 10px;
+}
+
+.mapEditView .toolBar .cancelButton {
+    margin: 10px;
+}
+
+.mapEditView .toolBar .backButton {
+    font-size: 2em;
+}
+
+.mapEditView .contents {
+    flex-grow: 1;
+    background: white;
+    overflow-y: auto;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+    align-items: stretch;
+}
+
+.mapEditView .mapContainer {
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+}
+
+.mapEditView .mapContainer>img {
+    height: 99%;
+}
+
+.mapEditView .mapEditCanvas {
+    position: absolute;
+    display: block;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    cursor: crosshair;
+}
