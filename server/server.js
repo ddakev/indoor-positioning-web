@@ -79,7 +79,12 @@ function seedRandomData() {
     for(let i=0; i<100; i++) {
       let newEmp = {
         "name": "EmployeeName" + i,
-        "id": i
+        "id": i,
+        "uid": i,
+        "firstName": "Employee",
+        "lastName": "Name" + i,
+        "equipIds": [],
+        "role": "worker",
       };
       newEmp.hardhat = {
         "status": 1,

@@ -2,7 +2,6 @@
     display: flex;
     flex-flow: row nowrap;
     align-items: center;
-    margin-bottom: 10px;
 }
 
 .searchBarInput {

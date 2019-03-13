@@ -1,41 +1,21 @@
 import React, { Component } from 'react';
-import io from 'socket.io-client';
 import './DashboardView.css';
+import { Link } from 'react-router-dom';
 import SearchBar from './SearchBar.js';
 import EmployeeTable from './EmployeeTable.js';
 import Map from './Map.js';
-import config from './config.js';
 
 
 class DashboardView extends Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.changeSelectedId = this.changeSelectedId.bind(this);
     this.updateFilter = this.updateFilter.bind(this);
 
     this.state = {
       selectedId: null,
       filter: emp => true,
-      employeeData: [],
     };
-  }
-
-  componentDidMount() {
-    // Get current data from server
-    const xhr = new XMLHttpRequest();
-    xhr.onload = () => {
-      this.setState({employeeData: JSON.parse(xhr.responseText)})
-    };
-    xhr.open('GET', config.href + ":" + config.port + "/employeeData");
-    xhr.send();
-
-    // Get updates on tag locations and statuses from server
-    const socket = io(config.href + ":" + config.port);
-    socket.on('tagLocationUpdate', (msg) => {
-      let dummyEmployeeData = this.state.employeeData;
-      dummyEmployeeData[msg.id][msg.name].coords = {x: msg.x, y: msg.y};
-      this.setState({employeeData: dummyEmployeeData});
-    });
   }
 
   changeSelectedId(id) {
@@ -58,7 +38,7 @@ class DashboardView extends Component {
 
   updateFilter(needle) {
     this.setState({
-      filter: emp => emp.name.toLowerCase().indexOf(needle.toLowerCase()) !== -1,
+      filter: emp => (emp.firstName + " " + emp.lastName).toLowerCase().indexOf(needle.toLowerCase()) !== -1,
     })
   }
 
@@ -83,21 +63,36 @@ class DashboardView extends Component {
   render() {
     return (
       <div className="DashboardView">
-        <div className="header">
-          <h1>Put a title here or something</h1>
+        <div className="titleBar">
+          <h1>Indoor Positioning Monitor</h1>
         </div>
         <div className="content">
           <div className="leftPane">
-            <SearchBar onChange={this.updateFilter}/>
+            <div className="controlsContainer">
+              <div className="controls-left">
+                <SearchBar onChange={this.updateFilter}/>
+              </div>
+              <div className="controls-right">
+                <Link to="/employeeEdit" className="button-outline">Edit Employees</Link>
+                <Link to="/equipmentEdit" className="button-outline">Edit Equipment</Link>
+              </div>
+            </div>
             <EmployeeTable
-              data={this.state.employeeData.filter(this.state.filter)}
+              data={this.props.employeeData.filter(this.state.filter)}
               selectedId={this.state.selectedId}
               onSelectedChange={this.changeSelectedId}
               />
           </div>
           <div className = "rightPane">
+            <div className="controlsContainer">
+              <div className="controls-left">
+              </div>
+              <div className="controls-right">
+                <Link to="/mapEdit" className="button-outline">Edit Map</Link>
+              </div>
+            </div>
             <Map 
-              data={this.state.employeeData.filter(this.state.filter)}
+              data={this.props.employeeData.filter(this.state.filter)}
               selectedId={this.state.selectedId}
               onSelectedChange={this.changeSelectedId}
               />

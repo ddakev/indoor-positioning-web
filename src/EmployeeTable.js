@@ -10,7 +10,7 @@ class EmployeeTable extends Component {
 
     handleNewSelected(e) {
         if(e.target.checked) {
-            const id = parseInt(e.target.id.substring(3));
+            const id = e.target.id.substring(3);
             this.props.onSelectedChange(id);
         }
     }
@@ -35,18 +35,16 @@ class EmployeeTable extends Component {
                             <input
                                 type="radio"
                                 name="employeeRadio"
-                                id={"row" + employee.id}
+                                id={"row" + employee.employeeId}
                                 style={{display: 'none'}}
-                                checked={this.props.selectedId === employee.id}
+                                checked={this.props.selectedId === employee.employeeId}
                                 onChange={this.handleNewSelected}
                                 key={"input" + index}
                                 />,
                             <EmployeeRow
-                                name={employee.name}
-                                id={employee.id}
-                                hardhatStatus={employee.hardhat.status || employee.hardhat.outsideBounds}
-                                leftBootStatus={employee.leftBoot.status || employee.leftBoot.outsideBounds}
-                                rightBootStatus={employee.rightBoot.status || employee.rightBoot.outsideBounds}
+                                name={employee.firstName + " " + employee.lastName}
+                                id={employee.employeeId}
+                                equipments={employee.equips}
                                 key={"row" + index}
                                 />
                         );

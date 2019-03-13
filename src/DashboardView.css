@@ -4,18 +4,24 @@
     height: 100%;
     overflow: hidden;
 }
-  
-.DashboardView .header {
-    min-height: 75px;
-    flex-shrink: 0;
-    padding: 15px 20px;
+
+.DashboardView .titleBar {
+    height: 60px;
     background: rgb(70, 70, 70);
+    color: rgb(240, 245, 250);
+    padding: 0px 20px;
     box-sizing: border-box;
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    z-index: 2;
+    flex-shrink: 0;
 }
-  
-.DashboardView .header h1 {
-    color: white;
+
+.DashboardView .titleBar h1 {
     margin: 0;
+    font-size: 20pt;
+    font-weight: normal;
 }
   
 .DashboardView .content {
@@ -39,4 +45,39 @@
     align-items: center;
     position: relative;
 }
+
+.DashboardView .controlsContainer {
+    width: 100%;
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: stretch;
+    justify-content: space-between;
+    margin-bottom: 10px;
+
+}
+
+.DashboardView .controls-right, .DashboardView .controls-left {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+}
+
+.DashboardView .controls-right {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: stretch;
+}
+
+.DashboardView .controls-right .button-outline:last-child {
+    margin-left:10px;
+}
+
+.DashboardView .rightPane .controlsContainer {
+    position:absolute;
+    top:0px;
+    padding: 20px;
+    box-sizing:border-box;
+}
+
+
   

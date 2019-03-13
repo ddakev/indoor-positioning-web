@@ -87,12 +87,12 @@ class MapEditView extends Component {
         let nx = Math.cos(dir * 3.14 / 180);
         let ny = Math.sin(dir * 3.14 / 180);
         if(ds.snapLineY) {
-            const scale = fp.y - sp.y != 0 ? (fp.y - sp.y) / ny : (fp.x - sp.x) / nx;
+            const scale = fp.y - sp.y !== 0 ? (fp.y - sp.y) / ny : (fp.x - sp.x) / nx;
             nx = nx * scale + sp.x;
             ny = ny * scale + sp.y;
         }
         else if(ds.snapLineX) {
-            const scale = fp.x - sp.x != 0 ? (fp.x - sp.x) / nx : (fp.y - sp.y) / ny;
+            const scale = fp.x - sp.x !== 0 ? (fp.x - sp.x) / nx : (fp.y - sp.y) / ny;
             nx = nx * scale + sp.x;
             ny = ny * scale + sp.y;
         }
@@ -148,7 +148,7 @@ class MapEditView extends Component {
             for(let i=1; i<poly.length; i++) {
                 ds.ctx.lineTo(poly[i].x, poly[i].y);
             }
-            if(p == ds.polygons.length - 1) {
+            if(p === ds.polygons.length - 1) {
                 ds.ctx.lineTo(coords.x, coords.y);
             }
             ds.ctx.fillStyle = "#77bbff22";

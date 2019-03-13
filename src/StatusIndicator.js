@@ -4,8 +4,8 @@ import './StatusIndicator.css';
 class StatusIndicator extends Component {
     render() {
         return (
-                <span className={"statusIndicator " + (this.props.status ? "true" : "false")}>
-                    {this.props.status ? "ok" : "missing"}
+                <span className={"statusIndicator " + (this.props.available ? (this.props.status ? "true" : "false") : "not-available")}>
+                    {this.props.available ? (this.props.status ? "ok" : "missing") : "N/A"}
                 </span>
         );
     }

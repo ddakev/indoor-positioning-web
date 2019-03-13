@@ -8,7 +8,7 @@ class DashThumbnail extends Component {
         return (
             <div className="dashThumbnail">
                 <div className="image">
-                    <img src="/floorplan.jpg" />
+                    <img src="/floorplan.jpg" alt="Floorplan" />
                 </div>
                 <div className="description">
                     <span className="name">

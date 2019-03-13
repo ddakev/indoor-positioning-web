@@ -1,0 +1,74 @@
+.employeeEditView {
+    display: flex;
+    flex-flow: column nowrap;
+    height: 100%;
+    width: 100%;
+    align-items: stretch;
+}
+
+.employeeEditView .titleBar {
+    height: 60px;
+    background: rgb(70, 70, 70);
+    color: rgb(240, 245, 250);
+    padding: 0px 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    z-index: 2;
+    flex-shrink: 0;
+}
+
+.employeeEditView .titleBar h1 {
+    margin: 0;
+    font-size: 20pt;
+    font-weight: normal;
+}
+
+.employeeEditView .toolBar {
+    height: 50px;
+    background: rgb(246, 245, 246);
+    box-shadow: 0px 0px 15px -6px black;
+    z-index: 1;
+    flex-shrink: 0;
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: stretch;
+    justify-content: space-between;
+}
+
+.employeeEditView .toolbar-right {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    margin-right: 10px;
+}
+
+.employeeEditView .toolbar-left {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    margin-left: 10px;
+}
+
+.employeeEditView .toolBar .saveButton {
+    margin: 10px;
+}
+
+.employeeEditView .toolBar .cancelButton {
+    margin: 10px;
+}
+
+.employeeEditView .toolBar .backButton {
+    font-size: 2em;
+}
+
+.employeeEditView .contents {
+    flex-grow: 1;
+    background: rgb(237, 240, 244);
+    overflow-y: auto;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: center;
+    align-items: stretch;
+}
