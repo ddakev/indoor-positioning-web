@@ -59,6 +59,10 @@
     margin: 10px;
 }
 
+.mapEditView .toolBar .clearButton {
+    margin: 0 10px 0 20px;
+}
+
 .mapEditView .toolBar .backButton {
     font-size: 2em;
 }
@@ -80,7 +84,8 @@
 }
 
 .mapEditView .mapContainer>img {
-    height: 99%;
+    max-height: 99%;
+    max-width: 99%;
 }
 
 .mapEditView .mapEditCanvas {

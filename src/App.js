@@ -17,6 +17,7 @@ class App extends Component {
       employeeData: [],
       employees: [],
       equipments: [],
+      geofences: [],
     };
 
     this.fetchData = this.fetchData.bind(this);
@@ -66,9 +67,24 @@ class App extends Component {
       xhr.open('GET', config.api + "/equipment/get/all");
       xhr.send();
     });
-    Promise.all([employees, equipments]).then((values) => {
+    let geofences = new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = () => {
+        if(xhr.readyState === 4) {
+          if(xhr.status === 200) {
+            resolve(JSON.parse(xhr.responseText));
+          }
+          else {
+            reject();
+          }
+        }
+      };
+      xhr.open('GET', config.api + "/geofence/get/all");
+      xhr.send();
+    });
+    Promise.all([employees, equipments, geofences]).then((values) => {
       values[0].sort((a, b) => a.lastName < b.lastName);
-      this.setState({employees: values[0], equipments: values[1]});
+      this.setState({employees: values[0], equipments: values[1], geofences: values[2]});
       let emps = values[0];
       let eqs = values[1];
       for(let i=0; i<emps.length; i++) {
@@ -94,7 +110,12 @@ class App extends Component {
               />
           )} />
           <Route path="/main" component={MainView} />
-          <Route path="/mapEdit" component={MapEditView} />
+          <Route path="/mapEdit" render={() => (
+            <MapEditView
+              geofenceData={this.state.geofences}
+              updateData={this.fetchData}
+              />
+          )} />
           <Route path="/employeeEdit" render={() => (
             <EmployeeEditView
               data={this.state.employeeData}
