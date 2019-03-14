@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Redirect } from 'react-router-dom';
 import './MapEditView.css';
 import config from './config.js';
+import Toggle from './Toggle.js';
 
 class Point {
     constructor(x, y) {
@@ -18,6 +19,7 @@ class MapEditView extends Component {
 
         this.state = {
             shouldRedirect: false,
+            snapEnabled: true,
         };
 
         this.drawState = {
@@ -27,7 +29,6 @@ class MapEditView extends Component {
             moveListener: null,
             dblClickListener: null,
             preventClick: false,
-            snapEnabled: true,
             snapLineX: null,
             snapLineY: null,
             polygons: [],
@@ -41,6 +42,7 @@ class MapEditView extends Component {
         this.clear = this.clear.bind(this);
         this.redraw = this.redraw.bind(this);
         this.loadPolygons = this.loadPolygons.bind(this);
+        this.toggleSnap = this.toggleSnap.bind(this);
     }
 
     goBack() {
@@ -102,6 +104,10 @@ class MapEditView extends Component {
                 this.goBack();
             });
         });
+    }
+
+    toggleSnap() {
+        this.setState({snapEnabled: !this.state.snapEnabled});
     }
 
     componentDidMount() {
@@ -255,7 +261,7 @@ class MapEditView extends Component {
         const ds = this.drawState;
         const x = e.clientX - ds.canvas.parentElement.offsetLeft;
         const y = e.clientY - ds.canvas.parentElement.offsetTop;
-        const point = ds.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
+        const point = this.state.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
         const coords = e.shiftKey ? this.getAxisAlignedCoord(ds.lastPoint, point, 45) : point;
         ds.ctx.clearRect(0, 0, ds.canvas.width, ds.canvas.height);
         for(let p=0; p<ds.polygons.length; p++) {
@@ -303,7 +309,7 @@ class MapEditView extends Component {
                 ds.preventClick = false;
                 return;
             }
-            const point = ds.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
+            const point = this.state.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
             const coords = shiftKey ? this.getAxisAlignedCoord(ds.lastPoint, point, 45) : point;
             if(ds.lastPoint === null) {
                 ds.polygons.push([]);
@@ -336,6 +342,11 @@ class MapEditView extends Component {
                             <img src="back.png" alt="Back"/>
                         </div>
                         <div className="button-outline clearButton" onClick={this.clear}>Clear</div>
+                        <Toggle
+                            label="Snap"
+                            on={this.state.snapEnabled}
+                            onToggle={this.toggleSnap}
+                            />
                     </div>
                     <div className="toolbar-right">
                         <div className="button saveButton" onClick={this.save}>Save</div>

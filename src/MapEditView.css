@@ -67,6 +67,10 @@
     font-size: 2em;
 }
 
+.mapEditView .toolBar .toggle {
+    margin: 20px;
+}
+
 .mapEditView .contents {
     flex-grow: 1;
     background: white;
