@@ -19,6 +19,7 @@ class DashboardView extends Component {
   }
 
   changeSelectedId(id) {
+    console.log(id);
     if(this.state.selectedId !== id) {
         // scroll to new user id?
         let container = document.getElementsByClassName("leftPane")[0];

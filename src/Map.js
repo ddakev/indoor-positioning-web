@@ -17,7 +17,7 @@ class Map extends Component {
                                         <MapIndicator
                                             x={employee.equips[i].latestX}
                                             y={employee.equips[i].latestY}
-                                            id={employee.equips[i].employeeId}
+                                            id={employee.employeeId}
                                             desc={{name: employee.firstName + " " + employee.lastName, equipment: employee.equips[i].name}}
                                             selected={this.props.selectedId === employee.employeeId}
                                             onSelected={id => this.props.onSelectedChange(id)}
