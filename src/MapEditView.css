@@ -99,5 +99,12 @@
     left: 0;
     height: 100%;
     width: 100%;
+}
+
+.mapEditView .mapEditCanvas.draw {
     cursor: crosshair;
+}
+
+.mapEditView .mapEditCanvas.select {
+    cursor: default;
 }

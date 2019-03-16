@@ -11,6 +11,11 @@ class Point {
     }
 }
 
+const EditMode = {
+    DRAW: "DRAW",
+    SELECT: "SELECT",
+};
+
 const SNAP_THRESHOLD = 8;
 
 class MapEditView extends Component {
@@ -20,6 +25,7 @@ class MapEditView extends Component {
         this.state = {
             shouldRedirect: false,
             snapEnabled: true,
+            editMode: null,
         };
 
         this.drawState = {
@@ -33,14 +39,25 @@ class MapEditView extends Component {
             snapLineY: null,
             polygons: [],
             vertices: [],
+            selectedVerts: [],
+            hoverVert: null,
+            mouseDown: false,
+            dragged: false,
+            dragSelectHandled: false,
+            draggedVerts: [],
         };
-        this.clickEventHandler = this.clickEventHandler.bind(this);
-        this.moveEventHandler = this.moveEventHandler.bind(this);
-        this.doubleClickHandler = this.doubleClickHandler.bind(this);
+        this.drawClickEventHandler = this.drawClickEventHandler.bind(this);
+        this.drawMoveEventHandler = this.drawMoveEventHandler.bind(this);
+        this.drawDoubleClickHandler = this.drawDoubleClickHandler.bind(this);
+        this.selectClickEventHandler = this.selectClickEventHandler.bind(this);
+        this.selectMoveEventHandler = this.selectMoveEventHandler.bind(this);
+        this.selectMouseDownEventHandler = this.selectMouseDownEventHandler.bind(this);
+        this.selectMouseUpEventHandler = this.selectMouseUpEventHandler.bind(this);
         this.goBack = this.goBack.bind(this);
         this.save = this.save.bind(this);
         this.clear = this.clear.bind(this);
         this.redraw = this.redraw.bind(this);
+        this.drawVerts = this.drawVerts.bind(this);
         this.loadPolygons = this.loadPolygons.bind(this);
         this.toggleSnap = this.toggleSnap.bind(this);
     }
@@ -118,6 +135,7 @@ class MapEditView extends Component {
         }, 10);
         this.drawState.ctx = this.drawState.canvas.getContext('2d');
         this.loadPolygons(this.props);
+        this.switchToMode(EditMode.DRAW);
     }
 
     componentWillReceiveProps(newProps) {
@@ -132,6 +150,7 @@ class MapEditView extends Component {
     }
     
     redraw() {
+        console.log("redraw");
         const ds = this.drawState;
         ds.ctx.clearRect(0, 0, ds.canvas.width, ds.canvas.height);
         for(let p=0; p<ds.polygons.length; p++) {
@@ -147,16 +166,41 @@ class MapEditView extends Component {
             ds.ctx.stroke();
             ds.ctx.fill();
         }
+        if(this.state.editMode === EditMode.SELECT) {
+            this.drawVerts();
+        }
+    }
+
+    drawVerts() {
+        const VERT_SIZE = 4;
+        const ds = this.drawState;
+        for(let i=0; i<ds.vertices.length; i++) {
+            ds.ctx.strokeStyle = "#2480ff";
+            if(ds.selectedVerts.indexOf(ds.vertices[i]) !== -1) {
+                ds.ctx.fillStyle = "#2480ff";
+            }
+            else {
+                ds.ctx.fillStyle = "#fff";
+            }
+            let size = VERT_SIZE;
+            if(ds.hoverVert === ds.vertices[i]) {
+                size = SNAP_THRESHOLD;
+            }
+            ds.ctx.fillRect(ds.vertices[i].x - size/2, ds.vertices[i].y - size/2, size, size);
+            ds.ctx.strokeRect(ds.vertices[i].x - size/2, ds.vertices[i].y - size/2, size, size);
+        }
     }
 
     loadPolygons(props) {
         const ds = this.drawState;
         const polys = [];
         for(let i=0; i<props.geofenceData.length; i++) {
-            polys.push(JSON.parse(JSON.stringify(props.geofenceData[i].vertices)));
-            for(let j=0; j<polys[i].length; j++) {
-                polys[i][j].x *= ds.canvas.offsetWidth;
-                polys[i][j].y *= ds.canvas.offsetHeight;
+            const source_poly = JSON.parse(JSON.stringify(props.geofenceData[i].vertices));
+            polys.push([]);
+            for(let j=0; j<source_poly.length; j++) {
+                const newVert = new Point(source_poly[j].x * ds.canvas.offsetWidth, source_poly[j].y * ds.canvas.offsetHeight);
+                polys[i].push(newVert);
+                ds.vertices.push(newVert);
             }
         }
         ds.polygons = polys;
@@ -172,6 +216,7 @@ class MapEditView extends Component {
         let cxdist = SNAP_THRESHOLD+1;
         let cydist = SNAP_THRESHOLD+1;
         for(let i=0; i<verts.length; i++) {
+            if(ds.mouseDown && ds.selectedVerts.indexOf(verts[i]) !== -1) continue;
             const xdist = Math.abs(verts[i].x - p.x);
             const ydist = Math.abs(verts[i].y - p.y);
             if(xdist < SNAP_THRESHOLD) {
@@ -228,7 +273,7 @@ class MapEditView extends Component {
         return new Point(nx, ny);
     }
 
-    doubleClickHandler(e) {
+    drawDoubleClickHandler(e) {
         const ds = this.drawState;
         ds.preventClick = true;
         if(ds.lastPoint === null) {
@@ -251,13 +296,13 @@ class MapEditView extends Component {
             ds.ctx.fill();
         }
 
-        e.target.removeEventListener("mousemove", this.moveEventHandler);
-        e.target.removeEventListener("dblclick", this.doubleClickHandler);
+        e.target.removeEventListener("mousemove", this.drawMoveEventHandler);
+        e.target.removeEventListener("dblclick", this.drawDoubleClickHandler);
         ds.moveListener = null;
         ds.dblClickListener = null;
     }
 
-    moveEventHandler(e) {
+    drawMoveEventHandler(e) {
         const ds = this.drawState;
         const x = e.clientX - ds.canvas.parentElement.offsetLeft;
         const y = e.clientY - ds.canvas.parentElement.offsetTop;
@@ -298,7 +343,7 @@ class MapEditView extends Component {
         }
     }
 
-    clickEventHandler(e) {
+    drawClickEventHandler(e) {
         const ds = this.drawState;
         const x = e.clientX - ds.canvas.parentElement.offsetLeft;
         const y = e.clientY - ds.canvas.parentElement.offsetTop;
@@ -321,12 +366,140 @@ class MapEditView extends Component {
             ds.vertices.push(coords);
             ds.polygons[ds.polygons.length-1].push(coords);
             if(ds.moveListener === null) {
-                target.addEventListener("mousemove", this.moveEventHandler);
-                target.addEventListener("dblclick", this.doubleClickHandler);
-                ds.moveListener = this.moveEventHandler;
-                ds.dblClickListener = this.doubleClickHandler;
+                target.addEventListener("mousemove", this.drawMoveEventHandler);
+                target.addEventListener("dblclick", this.drawDoubleClickHandler);
+                ds.moveListener = this.drawMoveEventHandler;
+                ds.dblClickListener = this.drawDoubleClickHandler;
             }
         }, 100);
+    }
+
+    selectClickEventHandler(e) {
+    }
+
+    selectMoveEventHandler(e) {
+        const ds = this.drawState;
+        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        let newHoverVert = null;
+        if(!ds.mouseDown) {
+            let hoverMinDist = SNAP_THRESHOLD * SNAP_THRESHOLD;
+            for(let i=0; i<ds.vertices.length; i++) {
+                const dx = Math.abs(ds.vertices[i].x - x);
+                const dy = Math.abs(ds.vertices[i].y - y);
+                if(dx < SNAP_THRESHOLD && dy < SNAP_THRESHOLD) {
+                    if(dx * dx + dy * dy < hoverMinDist) {
+                        hoverMinDist = dx * dx + dy * dy;
+                        newHoverVert = ds.vertices[i];
+                    }
+                }
+            }
+            if(ds.hoverVert !== newHoverVert) {
+                ds.hoverVert = newHoverVert;
+                this.redraw();
+            }
+        }
+        else {
+            ds.dragged = true;
+            const point = this.state.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
+            const coords = e.shiftKey ? this.getAxisAlignedCoord(ds.lastPoint, point, 45) : point;
+            for(let i=0; i<ds.selectedVerts.length; i++) {
+                ds.selectedVerts[i].x = ds.draggedVerts[i].x + coords.x - ds.lastPoint.x;
+                ds.selectedVerts[i].y = ds.draggedVerts[i].y + coords.y - ds.lastPoint.y;
+            }
+            this.redraw();
+            if(ds.snapLineX) {
+                ds.ctx.strokeStyle = "#04F06A";
+                ds.ctx.beginPath();
+                ds.ctx.moveTo(ds.snapLineX, 0);
+                ds.ctx.lineTo(ds.snapLineX, ds.canvas.height);
+                ds.ctx.stroke();
+            }
+            if(ds.snapLineY) {
+                ds.ctx.strokeStyle = "#FF445A";
+                ds.ctx.beginPath();
+                ds.ctx.moveTo(0, ds.snapLineY);
+                ds.ctx.lineTo(ds.canvas.width, ds.snapLineY);
+                ds.ctx.stroke();
+            }
+        }
+    }
+
+    selectMouseDownEventHandler(e) {
+        const ds = this.drawState;
+        if(ds.hoverVert) {
+            if(ds.selectedVerts.indexOf(ds.hoverVert) === -1) {
+                if(!e.shiftKey && !e.ctrlKey) {
+                    ds.selectedVerts = [ds.hoverVert];
+                }
+                else {
+                    ds.selectedVerts.push(ds.hoverVert);
+                }
+                ds.dragSelectHandled = true;
+            }
+            else {
+                ds.dragSelectHandled = false;
+            }
+        }
+        else {
+            ds.selectedVerts = [];
+        }
+        this.redraw();
+        ds.mouseDown = true;
+        ds.dragged = false;
+        ds.lastPoint = ds.hoverVert ? {x: ds.hoverVert.x, y: ds.hoverVert.y} : null;
+        ds.draggedVerts = JSON.parse(JSON.stringify(ds.selectedVerts));
+    }
+
+    selectMouseUpEventHandler(e) {
+        const ds = this.drawState;
+        if(!ds.dragged && !ds.dragSelectHandled && ds.hoverVert) {
+            if(!e.shiftKey && !e.ctrlKey) {
+                ds.selectedVerts = [ds.hoverVert];
+            }
+            else {
+                ds.selectedVerts.splice(ds.selectedVerts.indexOf(ds.hoverVert), 1);
+            }
+        }
+        this.redraw();
+        ds.mouseDown = false;
+        ds.lastPoint = null;
+        ds.draggedVerts = [];
+    }
+
+    switchToMode(newEditMode) {
+        if(newEditMode === this.state.editMode) return;
+        const canvas = this.drawState.canvas;
+        switch(this.state.editMode) {
+            case EditMode.DRAW:
+                canvas.removeEventListener("click", this.drawClickEventHandler);
+                canvas.removeEventListener("mousemove", this.drawMoveEventHandler);
+                canvas.removeEventListener("dblclick", this.drawDoubleClickHandler);
+                break;
+            case EditMode.SELECT:
+                canvas.removeEventListener("click", this.selectClickEventHandler);
+                canvas.removeEventListener("mousemove", this.selectMoveEventHandler);
+                canvas.removeEventListener("mousedown", this.selectMouseDownEventHandler);
+                canvas.removeEventListener("mouseup", this.selectMouseUpEventHandler);
+                break;
+            default:
+                break;
+        }
+        this.setState({editMode: newEditMode});
+        switch(newEditMode) {
+            case EditMode.DRAW:
+                canvas.addEventListener("click", this.drawClickEventHandler);
+                break;
+            case EditMode.SELECT:
+                canvas.addEventListener("click", this.selectClickEventHandler);
+                canvas.addEventListener("mousemove", this.selectMoveEventHandler);
+                canvas.addEventListener("mousedown", this.selectMouseDownEventHandler);
+                canvas.addEventListener("mouseup", this.selectMouseUpEventHandler);
+                break;
+            default:
+                break;
+        }
+        setTimeout(() => this.redraw(), 1);
     }
 
     render() {
@@ -342,6 +515,18 @@ class MapEditView extends Component {
                             <img src="back.png" alt="Back"/>
                         </div>
                         <div className="button-outline clearButton" onClick={this.clear}>Clear</div>
+                        <div
+                            className="button-outline clearButton"
+                            onClick={() => this.switchToMode(EditMode.SELECT)}
+                            >
+                            Select
+                        </div>
+                        <div
+                            className="button-outline clearButton"
+                            onClick={() => this.switchToMode(EditMode.DRAW)}
+                            >
+                            Draw
+                        </div>
                         <Toggle
                             label="Snap"
                             on={this.state.snapEnabled}
@@ -357,8 +542,7 @@ class MapEditView extends Component {
                     <div className="mapContainer">
                         <img src="floorplan.jpg" alt="Floorplan" />
                         <canvas
-                            className="mapEditCanvas"
-                            onClick={this.clickEventHandler}
+                            className={"mapEditCanvas" + (this.state.editMode === EditMode.DRAW ? " draw" : " select")}
                             />
                     </div>
                 </div>
