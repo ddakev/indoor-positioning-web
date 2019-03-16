@@ -49,7 +49,6 @@ class MapEditView extends Component {
         this.drawClickEventHandler = this.drawClickEventHandler.bind(this);
         this.drawMoveEventHandler = this.drawMoveEventHandler.bind(this);
         this.drawDoubleClickHandler = this.drawDoubleClickHandler.bind(this);
-        this.selectClickEventHandler = this.selectClickEventHandler.bind(this);
         this.selectMoveEventHandler = this.selectMoveEventHandler.bind(this);
         this.selectMouseDownEventHandler = this.selectMouseDownEventHandler.bind(this);
         this.selectMouseUpEventHandler = this.selectMouseUpEventHandler.bind(this);
@@ -136,6 +135,10 @@ class MapEditView extends Component {
         this.drawState.ctx = this.drawState.canvas.getContext('2d');
         this.loadPolygons(this.props);
         this.switchToMode(EditMode.DRAW);
+    }
+
+    componentWillUnmount() {
+        this.switchToMode(null);
     }
 
     componentWillReceiveProps(newProps) {
@@ -344,24 +347,22 @@ class MapEditView extends Component {
             const point = this.state.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
             const coords = shiftKey ? this.getAxisAlignedCoord(ds.lastPoint, point, 45) : point;
 
-            if(coords.x === ds.polygons[ds.polygons.length-1][0].x && coords.y === ds.polygons[ds.polygons.length-1][0].y) {
-                if(ds.lastPoint !== null) {
-                    ds.lastPoint = null;
-                    this.redraw();
-                    e.target.removeEventListener("mousemove", this.drawMoveEventHandler);
-                    e.target.removeEventListener("dblclick", this.drawDoubleClickHandler);
-                    ds.moveListener = null;
-                    ds.dblClickListener = null;
-                    return;
-                }
-            }
-
             if(ds.lastPoint === null) {
                 ds.polygons.push([]);
             }
             else if(ds.lastPoint.x === coords.x && ds.lastPoint.y === coords.y) {
                 return;
             }
+            else if(coords.x === ds.polygons[ds.polygons.length-1][0].x && coords.y === ds.polygons[ds.polygons.length-1][0].y) {
+                ds.lastPoint = null;
+                this.redraw();
+                e.target.removeEventListener("mousemove", this.drawMoveEventHandler);
+                e.target.removeEventListener("dblclick", this.drawDoubleClickHandler);
+                ds.moveListener = null;
+                ds.dblClickListener = null;
+                return;
+            }
+
             ds.lastPoint = coords;
             ds.vertices.push(coords);
             ds.polygons[ds.polygons.length-1].push(coords);
@@ -372,9 +373,6 @@ class MapEditView extends Component {
                 ds.dblClickListener = this.drawDoubleClickHandler;
             }
         }, 100);
-    }
-
-    selectClickEventHandler(e) {
     }
 
     selectMoveEventHandler(e) {
@@ -408,25 +406,29 @@ class MapEditView extends Component {
                 ds.selectedVerts[i].y = ds.draggedVerts[i].y + coords.y - ds.lastPoint.y;
             }
             this.redraw();
-            if(ds.snapLineX) {
-                ds.ctx.strokeStyle = "#04F06A";
-                ds.ctx.beginPath();
-                ds.ctx.moveTo(ds.snapLineX, 0);
-                ds.ctx.lineTo(ds.snapLineX, ds.canvas.height);
-                ds.ctx.stroke();
-            }
-            if(ds.snapLineY) {
-                ds.ctx.strokeStyle = "#FF445A";
-                ds.ctx.beginPath();
-                ds.ctx.moveTo(0, ds.snapLineY);
-                ds.ctx.lineTo(ds.canvas.width, ds.snapLineY);
-                ds.ctx.stroke();
+            if(ds.draggedVerts.length > 0) {
+                if(ds.snapLineX) {
+                    ds.ctx.strokeStyle = "#04F06A";
+                    ds.ctx.beginPath();
+                    ds.ctx.moveTo(ds.snapLineX, 0);
+                    ds.ctx.lineTo(ds.snapLineX, ds.canvas.height);
+                    ds.ctx.stroke();
+                }
+                if(ds.snapLineY) {
+                    ds.ctx.strokeStyle = "#FF445A";
+                    ds.ctx.beginPath();
+                    ds.ctx.moveTo(0, ds.snapLineY);
+                    ds.ctx.lineTo(ds.canvas.width, ds.snapLineY);
+                    ds.ctx.stroke();
+                }
             }
         }
     }
 
     selectMouseDownEventHandler(e) {
         const ds = this.drawState;
+        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.parentElement.offsetTop;
         if(ds.hoverVert) {
             if(ds.selectedVerts.indexOf(ds.hoverVert) === -1) {
                 if(!e.shiftKey && !e.ctrlKey) {
@@ -442,12 +444,22 @@ class MapEditView extends Component {
             }
         }
         else {
-            ds.selectedVerts = [];
+            let selectedPoly = false;
+            for(let i=ds.polygons.length-1; i>=0; i--) {
+                if(this.isPointInsidePolygon(new Point(x, y), ds.polygons[i])) {
+                    ds.selectedVerts = ds.polygons[i];
+                    selectedPoly = true;
+                    break;
+                }
+            }
+            if(!selectedPoly) {
+                ds.selectedVerts = [];
+            }
         }
         this.redraw();
         ds.mouseDown = true;
         ds.dragged = false;
-        ds.lastPoint = ds.hoverVert ? {x: ds.hoverVert.x, y: ds.hoverVert.y} : null;
+        ds.lastPoint = ds.hoverVert ? {x: ds.hoverVert.x, y: ds.hoverVert.y} : new Point(x, y);
         ds.draggedVerts = JSON.parse(JSON.stringify(ds.selectedVerts));
     }
 
@@ -467,6 +479,28 @@ class MapEditView extends Component {
         ds.draggedVerts = [];
     }
 
+    isPointInsidePolygon(point, poly) {
+        let countIntersects = 0;
+        for(let i=0; i<poly.length; i++) {
+            const vert1 = poly[i];
+            const vert2 = poly[(i+1) % poly.length];
+            if(Math.sign(vert1.y - point.y) === Math.sign(point.y - vert2.y)) {
+                if(vert1.y !== vert2.y) {
+                    const xint = (point.y - vert1.y) * (vert2.x - vert1.x) / (vert2.y - vert1.y) + vert1.x;
+                    if(xint < point.x) {
+                        countIntersects ++;
+                    }
+                }
+                else {
+                    if(vert1.x < point.x || vert2.x < point.x) {
+                        countIntersects ++;
+                    }
+                }
+            }
+        }
+        return countIntersects % 2 === 1;
+    }
+
     switchToMode(newEditMode) {
         if(newEditMode === this.state.editMode) return;
         const canvas = this.drawState.canvas;
@@ -477,7 +511,6 @@ class MapEditView extends Component {
                 canvas.removeEventListener("dblclick", this.drawDoubleClickHandler);
                 break;
             case EditMode.SELECT:
-                canvas.removeEventListener("click", this.selectClickEventHandler);
                 canvas.removeEventListener("mousemove", this.selectMoveEventHandler);
                 canvas.removeEventListener("mousedown", this.selectMouseDownEventHandler);
                 canvas.removeEventListener("mouseup", this.selectMouseUpEventHandler);
@@ -491,7 +524,6 @@ class MapEditView extends Component {
                 canvas.addEventListener("click", this.drawClickEventHandler);
                 break;
             case EditMode.SELECT:
-                canvas.addEventListener("click", this.selectClickEventHandler);
                 canvas.addEventListener("mousemove", this.selectMoveEventHandler);
                 canvas.addEventListener("mousedown", this.selectMouseDownEventHandler);
                 canvas.addEventListener("mouseup", this.selectMouseUpEventHandler);
