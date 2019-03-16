@@ -281,20 +281,7 @@ class MapEditView extends Component {
         }
         ds.lastPoint = null;
 
-        ds.ctx.clearRect(0, 0, ds.canvas.width, ds.canvas.height);
-        for(let p=0; p<ds.polygons.length; p++) {
-            let poly = ds.polygons[p];
-            ds.ctx.beginPath();
-            ds.ctx.moveTo(poly[0].x, poly[0].y);
-            for(let i=1; i<poly.length; i++) {
-                ds.ctx.lineTo(poly[i].x, poly[i].y);
-            }
-            ds.ctx.lineTo(poly[0].x, poly[0].y);
-            ds.ctx.fillStyle = "#77bbff22";
-            ds.ctx.strokeStyle = "black";
-            ds.ctx.stroke();
-            ds.ctx.fill();
-        }
+        this.redraw();
 
         e.target.removeEventListener("mousemove", this.drawMoveEventHandler);
         e.target.removeEventListener("dblclick", this.drawDoubleClickHandler);
@@ -356,10 +343,23 @@ class MapEditView extends Component {
             }
             const point = this.state.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
             const coords = shiftKey ? this.getAxisAlignedCoord(ds.lastPoint, point, 45) : point;
+
+            if(coords.x === ds.polygons[ds.polygons.length-1][0].x && coords.y === ds.polygons[ds.polygons.length-1][0].y) {
+                if(ds.lastPoint !== null) {
+                    ds.lastPoint = null;
+                    this.redraw();
+                    e.target.removeEventListener("mousemove", this.drawMoveEventHandler);
+                    e.target.removeEventListener("dblclick", this.drawDoubleClickHandler);
+                    ds.moveListener = null;
+                    ds.dblClickListener = null;
+                    return;
+                }
+            }
+
             if(ds.lastPoint === null) {
                 ds.polygons.push([]);
             }
-            else if(ds.lastPoint.x === point.x && ds.lastPoint.y === point.y) {
+            else if(ds.lastPoint.x === coords.x && ds.lastPoint.y === coords.y) {
                 return;
             }
             ds.lastPoint = coords;
