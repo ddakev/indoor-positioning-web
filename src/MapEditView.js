@@ -52,6 +52,7 @@ class MapEditView extends Component {
         this.selectMoveEventHandler = this.selectMoveEventHandler.bind(this);
         this.selectMouseDownEventHandler = this.selectMouseDownEventHandler.bind(this);
         this.selectMouseUpEventHandler = this.selectMouseUpEventHandler.bind(this);
+        this.selectKeyDownEventHandler = this.selectKeyDownEventHandler.bind(this);
         this.goBack = this.goBack.bind(this);
         this.save = this.save.bind(this);
         this.clear = this.clear.bind(this);
@@ -447,12 +448,17 @@ class MapEditView extends Component {
             let selectedPoly = false;
             for(let i=ds.polygons.length-1; i>=0; i--) {
                 if(this.isPointInsidePolygon(new Point(x, y), ds.polygons[i])) {
-                    ds.selectedVerts = ds.polygons[i];
+                    if(!e.shiftKey && !e.ctrlKey) {
+                        ds.selectedVerts = ds.polygons[i];
+                    }
+                    else {
+                        ds.selectedVerts = ds.selectedVerts.concat(ds.polygons[i]);
+                    }
                     selectedPoly = true;
                     break;
                 }
             }
-            if(!selectedPoly) {
+            if(!selectedPoly && !e.shiftKey && !e.ctrlKey) {
                 ds.selectedVerts = [];
             }
         }
@@ -479,6 +485,28 @@ class MapEditView extends Component {
         ds.draggedVerts = [];
     }
 
+    selectKeyDownEventHandler(e) {
+        if(e.keyCode === 46) {
+            // Delete pressed
+            const ds = this.drawState;
+            for(let i=ds.selectedVerts.length-1; i>=0; i--) {
+                for(let p=0; p<ds.polygons.length; p++) {
+                    const vertPos = ds.polygons[p].indexOf(ds.selectedVerts[i]);
+                    if(vertPos !== -1) {
+                        ds.polygons[p].splice(vertPos, 1);
+                        if(ds.polygons[p].length === 0) {
+                            ds.polygons.splice(p, 1);
+                        }
+                        break;
+                    }
+                }
+                ds.vertices.splice(ds.vertices.indexOf(ds.selectedVerts[i]), 1);
+            }
+            ds.selectedVerts = [];
+            this.redraw();
+        }
+    }
+
     isPointInsidePolygon(point, poly) {
         let countIntersects = 0;
         for(let i=0; i<poly.length; i++) {
@@ -503,17 +531,22 @@ class MapEditView extends Component {
 
     switchToMode(newEditMode) {
         if(newEditMode === this.state.editMode) return;
-        const canvas = this.drawState.canvas;
+        const ds = this.drawState;
+        const canvas = ds.canvas;
         switch(this.state.editMode) {
             case EditMode.DRAW:
                 canvas.removeEventListener("click", this.drawClickEventHandler);
                 canvas.removeEventListener("mousemove", this.drawMoveEventHandler);
                 canvas.removeEventListener("dblclick", this.drawDoubleClickHandler);
+                ds.moveListener = null;
+                ds.dblClickListener = null;
+                ds.lastPoint = null;
                 break;
             case EditMode.SELECT:
                 canvas.removeEventListener("mousemove", this.selectMoveEventHandler);
                 canvas.removeEventListener("mousedown", this.selectMouseDownEventHandler);
                 canvas.removeEventListener("mouseup", this.selectMouseUpEventHandler);
+                canvas.removeEventListener("keydown", this.selectKeyDownEventHandler);
                 break;
             default:
                 break;
@@ -527,6 +560,7 @@ class MapEditView extends Component {
                 canvas.addEventListener("mousemove", this.selectMoveEventHandler);
                 canvas.addEventListener("mousedown", this.selectMouseDownEventHandler);
                 canvas.addEventListener("mouseup", this.selectMouseUpEventHandler);
+                canvas.addEventListener("keydown", this.selectKeyDownEventHandler);
                 break;
             default:
                 break;
@@ -575,6 +609,7 @@ class MapEditView extends Component {
                         <img src="floorplan.jpg" alt="Floorplan" />
                         <canvas
                             className={"mapEditCanvas" + (this.state.editMode === EditMode.DRAW ? " draw" : " select")}
+                            tabIndex="-1"
                             />
                     </div>
                 </div>
