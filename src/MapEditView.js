@@ -150,6 +150,7 @@ class MapEditView extends Component {
 
     clear() {
         this.drawState.polygons = [];
+        this.drawState.vertices = [];
         this.redraw();
     }
     
@@ -580,19 +581,6 @@ class MapEditView extends Component {
                         <div className="link-button backButton" onClick={this.goBack}>
                             <img src="back.png" alt="Back"/>
                         </div>
-                        <div className="button-outline clearButton" onClick={this.clear}>Clear</div>
-                        <div
-                            className="button-outline clearButton"
-                            onClick={() => this.switchToMode(EditMode.SELECT)}
-                            >
-                            Select
-                        </div>
-                        <div
-                            className="button-outline clearButton"
-                            onClick={() => this.switchToMode(EditMode.DRAW)}
-                            >
-                            Draw
-                        </div>
                         <Toggle
                             label="Snap"
                             on={this.state.snapEnabled}
@@ -605,6 +593,30 @@ class MapEditView extends Component {
                     </div>
                 </div>
                 <div className="contents">
+                    <div className="toolbox">
+                        <div
+                            className={"button-toolbox" + (this.state.editMode === EditMode.SELECT ? " selected" : "")}
+                            onClick={() => this.switchToMode(EditMode.SELECT)}
+                            >
+                            <img src="select.png" alt="Select" />
+                            Select
+                        </div>
+                        <div
+                            className={"button-toolbox" + (this.state.editMode === EditMode.DRAW ? " selected" : "")}
+                            onClick={() => this.switchToMode(EditMode.DRAW)}
+                            >
+                            <img src="draw.svg" alt="Draw" />
+                            Draw
+                        </div>
+                        <div className="toolbox-divider" />
+                        <div
+                            className="button-toolbox"
+                            onClick={this.clear}
+                            >
+                            <img src="clear.png" alt="Clear" />
+                            Clear
+                        </div>
+                    </div>
                     <div className="mapContainer">
                         <img src="floorplan.jpg" alt="Floorplan" />
                         <canvas

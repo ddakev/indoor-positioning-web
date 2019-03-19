@@ -109,3 +109,49 @@
 .mapEditView .mapEditCanvas.select {
     cursor: default;
 }
+
+.mapEditView .toolbox {
+    position: absolute;
+    left: 0;
+    align-self: center;
+    display: flex;
+    flex-flow: column nowrap;
+    background: rgb(245, 247, 250);
+    box-shadow: 0px 0px 8px -3px rgba(0, 0, 0, 0.75);
+    padding: 2px;
+    z-index: 1;
+}
+
+.mapEditView .button-toolbox {
+    display: inline-flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    padding: 8px 6px;
+    background: white;
+    color: rgb(100, 100, 100);
+    background: none;
+    cursor: pointer;
+    text-decoration: none;
+    margin: 2px;
+    user-select: none;
+}
+
+.mapEditView .button-toolbox img {
+    height: 16pt;
+    margin-right: 5px;
+    margin-top: 2px;
+}
+
+.mapEditView .button-toolbox:hover {
+    background: rgb(240, 240, 240);
+}
+
+.mapEditView .button-toolbox:active, .mapEditView .button-toolbox.selected {
+    background: rgb(220, 220, 220);
+}
+
+.mapEditView .toolbox .toolbox-divider {
+    height: 0px;
+    border-bottom: 1px solid rgb(220, 220, 220);
+    margin: 5px 5px;
+}
