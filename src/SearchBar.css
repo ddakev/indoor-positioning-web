@@ -5,13 +5,19 @@
 }
 
 .searchBarInput {
-    border: 1px solid rgb(200, 200, 200);
-    font-size: 14pt;
-    padding: 8px 10px 8px 30px;
-    border-radius: 5px;
+    border: none;
+    border-bottom: 2px solid rgb(200, 200, 200);
+    font-size: 12pt;
+    padding: 7px 10px 7px 25px;
     display: inline-block;
     outline: none;
-    margin-left: -28px;
+    margin-left: -20px;
+    transition: border-bottom-color 0.3s;
+    max-width: 150px;
+}
+
+.searchBarInput:focus {
+    border-bottom: 2px solid rgb(119, 187, 255);
 }
 
 .searchBar img {

@@ -19,7 +19,7 @@ class SearchBar extends Component {
                 <input
                     type="text"
                     className="searchBarInput"
-                    placeholder="Search by name"
+                    placeholder="Search..."
                     onInput={this.handleChange}
                     />
             </div>
