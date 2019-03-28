@@ -3,10 +3,29 @@ import './Map.css';
 import MapIndicator from './MapIndicator.js';
 
 class Map extends Component {
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            img: '',
+        };
+    };
+
+    componentDidMount() {
+        fetch('http://localhost:8080/api/v1/floorplan/get')
+        .then(res => res.json())
+        .then(data => {
+            this.setState({
+                img: data.imgData,
+            });
+        });
+    }
+
     render() {
+        const { img } = this.state;
         return (
             <div className="floorplanContainer">
-                <img src="floorplan.jpg"  alt="Floorplan" />
+                <img src={img}  alt="Floorplan" />
                 <div className="mapCoordArea">
                     {
                         this.props.data.map((employee, index) => {
