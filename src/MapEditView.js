@@ -14,6 +14,7 @@ class Point {
 const EditMode = {
     DRAW: "DRAW",
     SELECT: "SELECT",
+    ROUTERS: "ROUTERS",
 };
 
 const SNAP_THRESHOLD = 8;
@@ -45,6 +46,7 @@ class MapEditView extends Component {
             dragged: false,
             dragSelectHandled: false,
             draggedVerts: [],
+            routersPositions: [],
         };
         this.drawClickEventHandler = this.drawClickEventHandler.bind(this);
         this.drawMoveEventHandler = this.drawMoveEventHandler.bind(this);
@@ -53,6 +55,8 @@ class MapEditView extends Component {
         this.selectMouseDownEventHandler = this.selectMouseDownEventHandler.bind(this);
         this.selectMouseUpEventHandler = this.selectMouseUpEventHandler.bind(this);
         this.selectKeyDownEventHandler = this.selectKeyDownEventHandler.bind(this);
+        this.routersMoveEventHandler = this.routersMoveEventHandler.bind(this);
+        this.routersClickEventHandler = this.routersClickEventHandler.bind(this);
         this.goBack = this.goBack.bind(this);
         this.save = this.save.bind(this);
         this.clear = this.clear.bind(this);
@@ -151,6 +155,7 @@ class MapEditView extends Component {
     clear() {
         this.drawState.polygons = [];
         this.drawState.vertices = [];
+        this.drawState.routersPositions = [];
         this.redraw();
     }
     
@@ -174,10 +179,25 @@ class MapEditView extends Component {
         if(this.state.editMode === EditMode.SELECT) {
             this.drawVerts();
         }
+        else {
+            for(let r=0; r<ds.routersPositions.length; r++) {
+                const CIRC_SIZE = 6;
+                ds.ctx.beginPath();
+                ds.ctx.arc(ds.routersPositions[r].x, ds.routersPositions[r].y, CIRC_SIZE/2, 0, 2*Math.PI);
+                if(this.state.editMode == EditMode.DRAW) {
+                    ds.ctx.fillStyle = "#B6465F44";
+                }
+                else {
+                    ds.ctx.fillStyle = "#B6465F";
+                }
+                ds.ctx.fill();
+            }
+        }
     }
 
     drawVerts() {
         const VERT_SIZE = 4;
+        const CIRC_SIZE = 6;
         const ds = this.drawState;
         for(let i=0; i<ds.vertices.length; i++) {
             ds.ctx.strokeStyle = "#2480ff";
@@ -193,6 +213,23 @@ class MapEditView extends Component {
             }
             ds.ctx.fillRect(ds.vertices[i].x - size/2, ds.vertices[i].y - size/2, size, size);
             ds.ctx.strokeRect(ds.vertices[i].x - size/2, ds.vertices[i].y - size/2, size, size);
+        }
+        for(let r=0; r<ds.routersPositions.length; r++) {
+            ds.ctx.strokeStyle = "#B6465F";
+            if(ds.selectedVerts.indexOf(ds.routersPositions[r]) !== -1) {
+                ds.ctx.fillStyle = "#B6465F";
+            }
+            else {
+                ds.ctx.fillStyle = "#fff";
+            }
+            let size = VERT_SIZE;
+            if(ds.hoverVert === ds.routersPositions[r]) {
+                size = SNAP_THRESHOLD;
+            }
+            ds.ctx.beginPath();
+            ds.ctx.arc(ds.routersPositions[r].x, ds.routersPositions[r].y, size/2, 0, 2*Math.PI);
+            ds.ctx.fill();
+            ds.ctx.stroke();
         }
     }
 
@@ -319,6 +356,18 @@ class MapEditView extends Component {
             ds.ctx.stroke();
             ds.ctx.fill();
         }
+        for(let r=0; r<ds.routersPositions.length; r++) {
+            const CIRC_SIZE = 6;
+            ds.ctx.beginPath();
+            ds.ctx.arc(ds.routersPositions[r].x, ds.routersPositions[r].y, CIRC_SIZE/2, 0, 2*Math.PI);
+            if(this.state.editMode == EditMode.DRAW) {
+                ds.ctx.fillStyle = "#B6465F44";
+            }
+            else {
+                ds.ctx.fillStyle = "#B6465F";
+            }
+            ds.ctx.fill();
+        }
         if(ds.snapLineX) {
             ds.ctx.strokeStyle = "#04F06A";
             ds.ctx.beginPath();
@@ -384,13 +433,14 @@ class MapEditView extends Component {
         let newHoverVert = null;
         if(!ds.mouseDown) {
             let hoverMinDist = SNAP_THRESHOLD * SNAP_THRESHOLD;
-            for(let i=0; i<ds.vertices.length; i++) {
-                const dx = Math.abs(ds.vertices[i].x - x);
-                const dy = Math.abs(ds.vertices[i].y - y);
+            const verts = ds.vertices.concat(ds.routersPositions);
+            for(let i=0; i<verts.length; i++) {
+                const dx = Math.abs(verts[i].x - x);
+                const dy = Math.abs(verts[i].y - y);
                 if(dx < SNAP_THRESHOLD && dy < SNAP_THRESHOLD) {
                     if(dx * dx + dy * dy < hoverMinDist) {
                         hoverMinDist = dx * dx + dy * dy;
-                        newHoverVert = ds.vertices[i];
+                        newHoverVert = verts[i];
                     }
                 }
             }
@@ -508,6 +558,30 @@ class MapEditView extends Component {
         }
     }
 
+    routersMoveEventHandler(e) {
+        const ds = this.drawState;
+        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        const point = this.state.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
+        const coords = e.shiftKey ? this.getAxisAlignedCoord(ds.lastPoint, point, 45) : point;
+        this.redraw();
+        const CIRC_SIZE = 6;
+        ds.ctx.beginPath();
+        ds.ctx.arc(coords.x, coords.y, CIRC_SIZE/2, 0, 2*Math.PI);
+        ds.ctx.fillStyle = "#B6465F";
+        ds.ctx.fill();
+    }
+
+    routersClickEventHandler(e) {
+        const ds = this.drawState;
+        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        const point = this.state.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
+        const coords = e.shiftKey ? this.getAxisAlignedCoord(ds.lastPoint, point, 45) : point;
+        ds.routersPositions.push(coords);
+        this.redraw();
+    }
+
     isPointInsidePolygon(point, poly) {
         let countIntersects = 0;
         for(let i=0; i<poly.length; i++) {
@@ -549,6 +623,10 @@ class MapEditView extends Component {
                 canvas.removeEventListener("mouseup", this.selectMouseUpEventHandler);
                 canvas.removeEventListener("keydown", this.selectKeyDownEventHandler);
                 break;
+            case EditMode.ROUTERS:
+                canvas.removeEventListener("mousemove", this.routersMoveEventHandler);
+                canvas.removeEventListener("click", this.routersClickEventHandler);
+                break;
             default:
                 break;
         }
@@ -562,6 +640,10 @@ class MapEditView extends Component {
                 canvas.addEventListener("mousedown", this.selectMouseDownEventHandler);
                 canvas.addEventListener("mouseup", this.selectMouseUpEventHandler);
                 canvas.addEventListener("keydown", this.selectKeyDownEventHandler);
+                break;
+            case EditMode.ROUTERS:
+                canvas.addEventListener("mousemove", this.routersMoveEventHandler);
+                canvas.addEventListener("click", this.routersClickEventHandler);
                 break;
             default:
                 break;
@@ -607,6 +689,12 @@ class MapEditView extends Component {
                             >
                             <img src="draw.svg" alt="Draw" />
                             Draw
+                        </div>
+                        <div
+                            className={"button-toolbox" + (this.state.editMode === EditMode.ROUTERS ? " selected" : "")}
+                            onClick={() => this.switchToMode(EditMode.ROUTERS)}
+                            >
+                            Routers
                         </div>
                         <div className="toolbox-divider" />
                         <div
