@@ -6,7 +6,7 @@ class Map extends Component {
     render() {
         return (
             <div className="floorplanContainer">
-                <img src="floorplan.jpg"  alt="Floorplan" />
+                <img src={this.props.floorplan}  alt="Floorplan" />
                 <div className="mapCoordArea">
                     {
                         this.props.data.map((employee, index) => {

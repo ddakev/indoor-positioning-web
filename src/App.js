@@ -18,13 +18,16 @@ class App extends Component {
       employees: [],
       equipments: [],
       geofences: null,
+      floorplan: null,
     };
 
     this.fetchData = this.fetchData.bind(this);
+    this.fetchFloorplan = this.fetchFloorplan.bind(this);
   }
 
   componentDidMount() {
     this.fetchData();
+    this.fetchFloorplan();
     // Get current data from server
 
     // Get updates on tag locations and statuses from server
@@ -34,6 +37,29 @@ class App extends Component {
       dummyEmployeeData[msg.id][msg.name].coords = {x: msg.x, y: msg.y};
       this.setState({employeeData: dummyEmployeeData});
     });*/
+  }
+
+  fetchFloorplan() {
+    new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = () => {
+        if(xhr.readyState === 4) {
+          if(xhr.status === 200) {
+            resolve(JSON.parse(xhr.responseText));
+          }
+          else {
+            reject(xhr.responseText);
+          }
+        }
+      };
+      xhr.open('GET', config.api + "/floorplan/get");
+      xhr.send();
+    }).then(response => {
+      this.setState({floorplan: response.imgData});
+    }).catch(err => {
+      this.setState({floorplan: null});
+      console.log(err);
+    });
   }
 
   fetchData() {
@@ -114,6 +140,7 @@ class App extends Component {
           <Route exact path="/" render={() => (
             <DashboardView
               employeeData={this.state.employeeData}
+              floorplan={this.state.floorplan}
               />
           )} />
           <Route path="/main" component={MainView} />
@@ -121,6 +148,8 @@ class App extends Component {
             <MapEditView
               geofenceData={this.state.geofences}
               updateData={this.fetchData}
+              updateFloorplan={this.fetchFloorplan}
+              floorplan={this.state.floorplan}
               />
           )} />
           <Route path="/employeeEdit" render={() => (

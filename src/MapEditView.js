@@ -27,6 +27,7 @@ class MapEditView extends Component {
             shouldRedirect: false,
             snapEnabled: true,
             editMode: null,
+            floorplanUpload: null,
         };
 
         this.drawState = {
@@ -57,6 +58,7 @@ class MapEditView extends Component {
         this.selectKeyDownEventHandler = this.selectKeyDownEventHandler.bind(this);
         this.routersMoveEventHandler = this.routersMoveEventHandler.bind(this);
         this.routersClickEventHandler = this.routersClickEventHandler.bind(this);
+        this.updateFloorplan = this.updateFloorplan.bind(this);
         this.importFloorplan = this.importFloorplan.bind(this);
         this.goBack = this.goBack.bind(this);
         this.save = this.save.bind(this);
@@ -64,6 +66,7 @@ class MapEditView extends Component {
         this.redraw = this.redraw.bind(this);
         this.drawVerts = this.drawVerts.bind(this);
         this.loadPolygons = this.loadPolygons.bind(this);
+        this.loadFloorplan = this.loadFloorplan.bind(this);
         this.toggleSnap = this.toggleSnap.bind(this);
     }
 
@@ -121,7 +124,9 @@ class MapEditView extends Component {
                 const xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = () => {
                     if(xhr.readyState === 4) {
-                        if(xhr.status === 200 || xhr.status === 201) {
+                        const response = JSON.parse(xhr.responseText);
+                        if(xhr.status === 200 || xhr.status === 201 ||
+                            (xhr.status === 404 && response.hasOwnProperty("message") && response["message"] === "Could not find geofence")) {
                             resolve();
                         }
                         else {
@@ -133,7 +138,8 @@ class MapEditView extends Component {
                 xhr.send();
             });
         }
-        updatePromise.then(() => {
+        const fileUpload = this.importFloorplan();
+        Promise.all([updatePromise, fileUpload]).then(() => {
             this.props.updateData();
             this.goBack();
         });
@@ -151,6 +157,7 @@ class MapEditView extends Component {
         }, 10);
         this.drawState.ctx = this.drawState.canvas.getContext('2d');
         this.loadPolygons(this.props);
+        this.loadFloorplan(this.props);
         this.switchToMode(EditMode.DRAW);
     }
 
@@ -162,33 +169,68 @@ class MapEditView extends Component {
         if(newProps.geofenceData !== this.props.geofenceData) {
             this.loadPolygons(newProps);
         }
+        if(newProps.floorplan !== this.props.floorplan) {
+            this.loadFloorplan(newProps);
+        }
     }
 
-    importFloorplan() {
-        let fd = new FormData();
+    updateFloorplan() {
+        const floorplan = document.getElementById("floorplan");
         const fu = document.getElementById("importFloorplan");
         if(fu.files.length === 1) {
-            fd.append("floorplan", fu.files[0]);
-            const fileUpload = new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.onreadystatechange = () => {
-                    if(xhr.readyState === 4) {
-                        if(xhr.status === 200 || xhr.status === 201) {
-                            resolve(JSON.parse(xhr.responseText));
+            this.setState({floorplanUpload: fu.files[0]});
+            floorplan.setAttribute('src', fu.files[0].name);
+            floorplan.onload = () => {
+                const ds = this.drawState;
+                ds.canvas.height = ds.canvas.offsetHeight;
+                ds.canvas.width = ds.canvas.offsetWidth;
+                this.drawState.polygons = [];
+                this.redraw();
+            };
+        }
+    }
+    
+    importFloorplan() {
+        if(!this.state.floorplanUpload) return new Promise(resolve => resolve());
+        let fd = new FormData();
+        fd.append("floorplan", this.state.floorplanUpload);
+        const fileUpload = new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = () => {
+                if(xhr.readyState === 4) {
+                    if(xhr.status === 200 || xhr.status === 201) {
+                        resolve(JSON.parse(xhr.responseText));
+                    }
+                    else {
+                        const response = JSON.parse(xhr.responseText);
+                        if(xhr.status === 404 && response.hasOwnProperty("message") && response["message"] === "No floorplan in database") {
+                            const addxhr = new XMLHttpRequest();
+                            addxhr.onreadystatechange = () => {
+                                if(addxhr.readyState === 4) {
+                                    if(addxhr.status === 200 || addxhr.status === 201) {
+                                        resolve(JSON.parse(addxhr.responseText));
+                                    }
+                                    else {
+                                        reject(addxhr.responseText);
+                                    }
+                                }
+                            };
+                            xhr.open('POST', config.api + "/floorplan/add");
+                            xhr.send(fd);
                         }
                         else {
-                            reject();
+                            reject(xhr.responseText);
                         }
                     }
-                };
-                xhr.open('POST', config.api + "/floorplan");
-                xhr.setRequestHeader('Content-Type', 'multipart/form-data');
-                xhr.send(fd);
-            });
-            fileUpload.then(() => {
-                this.props.updateData();
-            });
-        }
+                }
+            };
+            xhr.open('PUT', config.api + "/floorplan/update");
+            xhr.send(fd);
+        });
+        fileUpload.then(() => {
+            this.props.updateFloorplan();
+        });
+        return fileUpload;
     }
 
     clear() {
@@ -290,6 +332,18 @@ class MapEditView extends Component {
         ds.polygons = polys;
         
         setTimeout(this.redraw, 10);
+    }
+
+    loadFloorplan(props) {
+        if(!props.floorplan) return;
+        const floorplan = document.getElementById("floorplan");
+        floorplan.setAttribute('src', props.floorplan);
+        floorplan.onload = () => {
+            const ds = this.drawState;
+            ds.canvas.height = ds.canvas.offsetHeight;
+            ds.canvas.width = ds.canvas.offsetWidth;
+            this.loadPolygons(props);
+        };
     }
 
     snapToClosestVertex(p) {
@@ -705,11 +759,16 @@ class MapEditView extends Component {
                         <div className="link-button backButton" onClick={this.goBack}>
                             <img src="back.png" alt="Back"/>
                         </div>
-                        <input type="file" id="importFloorplan" className="hidden" accept=".png, .jpg, .jpeg" />
+                        <input
+                            type="file"
+                            id="importFloorplan"
+                            className="hidden"
+                            accept=".png, .jpg, .jpeg"
+                            onChange={this.updateFloorplan}
+                            />
                         <label
                             htmlFor="importFloorplan"
                             className="button-outline importButton"
-                            onClick={this.importFloorplan}
                             >
                             <img src="upload.svg" alt="Draw" />
                             Import
@@ -757,7 +816,7 @@ class MapEditView extends Component {
                         </div>
                     </div>
                     <div className="mapContainer">
-                        <img src="floorplan.jpg" id="floorplan" alt="Floorplan" />
+                        <img src={this.props.floorplan} id="floorplan" alt="Floorplan" />
                         <canvas
                             className={"mapEditCanvas" + (this.state.editMode === EditMode.DRAW ? " draw" : " select")}
                             tabIndex="-1"
