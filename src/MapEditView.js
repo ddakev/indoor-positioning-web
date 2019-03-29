@@ -185,6 +185,10 @@ class MapEditView extends Component {
                 ds.canvas.height = floorplan.offsetHeight;
                 ds.canvas.width = floorplan.offsetWidth;
                 this.drawState.polygons = [];
+                this.drawState.vertices = [];
+                this.drawState.routersPositions = [];
+                this.selectedVerts = [];
+                this.hoverVert = null;
                 this.redraw();
             };
         }
@@ -342,6 +346,11 @@ class MapEditView extends Component {
             const ds = this.drawState;
             ds.canvas.height = floorplan.offsetHeight;
             ds.canvas.width = floorplan.offsetWidth;
+            this.drawState.polygons = [];
+            this.drawState.vertices = [];
+            this.drawState.routersPositions = [];
+            this.selectedVerts = [];
+            this.hoverVert = null;
             this.loadPolygons(props);
         };
     }

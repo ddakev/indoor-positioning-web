@@ -65,6 +65,7 @@
 
 .mapEditView .toolBar .importButton {
     margin-left: 20px;
+    padding: 6px 10px;
 }
 
 .mapEditView .toolBar .toggle {
