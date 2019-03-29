@@ -57,6 +57,7 @@ class MapEditView extends Component {
         this.selectKeyDownEventHandler = this.selectKeyDownEventHandler.bind(this);
         this.routersMoveEventHandler = this.routersMoveEventHandler.bind(this);
         this.routersClickEventHandler = this.routersClickEventHandler.bind(this);
+        this.importFloorplan = this.importFloorplan.bind(this);
         this.goBack = this.goBack.bind(this);
         this.save = this.save.bind(this);
         this.clear = this.clear.bind(this);
@@ -71,59 +72,70 @@ class MapEditView extends Component {
     }
 
     save() {
-        let toDelete = [];
-        let polyIds = this.props.geofenceData.map(gfd => gfd["_id"]);
-        for(let i=0; i<polyIds.length; i++) {
-            toDelete.push(new Promise((resolve, reject) => {
+        let updatePromise = null;
+        if(this.drawState.polygons.length > 0) {
+            const geofences = {"boundaries": this.drawState.polygons.map(poly => {
+                return {
+                    "vertices": poly.map(vert => {return {x: vert.x / this.drawState.canvas.offsetWidth, y: vert.y / this.drawState.canvas.offsetHeight};}),
+                    "safetyLevel": "safe"
+                };
+            })};
+            updatePromise = new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = () => {
                     if(xhr.readyState === 4) {
-                        if(xhr.status === 200) {
+                        if(xhr.status === 200 || xhr.status === 201) {
                             resolve();
                         }
                         else {
-                            reject();
+                            const response = JSON.parse(xhr.responseText);
+                            if(xhr.status === 404 && response.hasOwnProperty("message") && response["message"] === "No geofence in database") {
+                                const addxhr = new XMLHttpRequest();
+                                addxhr.onreadystatechange = () => {
+                                    if(addxhr.readyState === 4) {
+                                        if(addxhr.status === 200 || addxhr.status === 201) {
+                                            resolve();
+                                        }
+                                        else {
+                                            reject(addxhr.responseText);
+                                        }
+                                    }
+                                };
+                                addxhr.open('POST', config.api + "/geofence/add");
+                                addxhr.setRequestHeader("Content-Type", "application/json");
+                                addxhr.send(JSON.stringify(geofences));
+                            }
+                            else {
+                                reject(xhr.responseText);
+                            }
                         }
                     }
                 };
-                xhr.open('DELETE', config.api + "/geofence/delete/" + polyIds[i]);
-                xhr.send();
-            }));
-        }
-        Promise.all(toDelete).then(() => {
-            let actions = [];
-            for(let i=0; i<this.drawState.polygons.length; i++) {
-                let normVerts = JSON.parse(JSON.stringify(this.drawState.polygons[i]));
-                for(let p=0; p<normVerts.length; p++) {
-                    normVerts[p].x /= this.drawState.canvas.offsetWidth;
-                    normVerts[p].y /= this.drawState.canvas.offsetHeight;
-                }
-                const submitObject = {
-                    vertices: normVerts,
-                    safetyLevel: "danger",
-                }
-
-                actions.push(new Promise((resolve, reject) => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.onreadystatechange = () => {
-                        if(xhr.readyState === 4) {
-                            if(xhr.status === 201) {
-                                resolve();
-                            }
-                            else {
-                                reject();
-                            }
-                        }
-                    };
-                    xhr.open('POST', config.api + "/geofence/add");
-                    xhr.setRequestHeader("Content-Type", "application/json");
-                    xhr.send(JSON.stringify(submitObject));
-                }));
-            }
-            Promise.all(actions).then(() => {
-                this.props.updateData();
-                this.goBack();
+                xhr.open('PUT', config.api + "/geofence/update");
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.send(JSON.stringify(geofences));
             });
+        }
+        else {
+            updatePromise = new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = () => {
+                    if(xhr.readyState === 4) {
+                        if(xhr.status === 200 || xhr.status === 201) {
+                            resolve();
+                        }
+                        else {
+                            reject(xhr.responseText);
+                        }
+                    }
+                };
+                xhr.open('DELETE', config.api + "/geofence/delete");
+                xhr.send();
+            });
+        }
+        updatePromise.then(() => {
+            this.props.updateData();
+            this.goBack();
         });
     }
 
@@ -149,6 +161,33 @@ class MapEditView extends Component {
     componentWillReceiveProps(newProps) {
         if(newProps.geofenceData !== this.props.geofenceData) {
             this.loadPolygons(newProps);
+        }
+    }
+
+    importFloorplan() {
+        let fd = new FormData();
+        const fu = document.getElementById("importFloorplan");
+        if(fu.files.length === 1) {
+            fd.append("floorplan", fu.files[0]);
+            const fileUpload = new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = () => {
+                    if(xhr.readyState === 4) {
+                        if(xhr.status === 200 || xhr.status === 201) {
+                            resolve(JSON.parse(xhr.responseText));
+                        }
+                        else {
+                            reject();
+                        }
+                    }
+                };
+                xhr.open('POST', config.api + "/floorplan");
+                xhr.setRequestHeader('Content-Type', 'multipart/form-data');
+                xhr.send(fd);
+            });
+            fileUpload.then(() => {
+                this.props.updateData();
+            });
         }
     }
 
@@ -184,7 +223,7 @@ class MapEditView extends Component {
                 const CIRC_SIZE = 6;
                 ds.ctx.beginPath();
                 ds.ctx.arc(ds.routersPositions[r].x, ds.routersPositions[r].y, CIRC_SIZE/2, 0, 2*Math.PI);
-                if(this.state.editMode == EditMode.DRAW) {
+                if(this.state.editMode === EditMode.DRAW) {
                     ds.ctx.fillStyle = "#B6465F44";
                 }
                 else {
@@ -197,7 +236,6 @@ class MapEditView extends Component {
 
     drawVerts() {
         const VERT_SIZE = 4;
-        const CIRC_SIZE = 6;
         const ds = this.drawState;
         for(let i=0; i<ds.vertices.length; i++) {
             ds.ctx.strokeStyle = "#2480ff";
@@ -236,6 +274,10 @@ class MapEditView extends Component {
     loadPolygons(props) {
         const ds = this.drawState;
         const polys = [];
+        if(props.geofenceData === null) {
+            ds.polygons = polys;
+            return;
+        }
         for(let i=0; i<props.geofenceData.length; i++) {
             const source_poly = JSON.parse(JSON.stringify(props.geofenceData[i].vertices));
             polys.push([]);
@@ -360,7 +402,7 @@ class MapEditView extends Component {
             const CIRC_SIZE = 6;
             ds.ctx.beginPath();
             ds.ctx.arc(ds.routersPositions[r].x, ds.routersPositions[r].y, CIRC_SIZE/2, 0, 2*Math.PI);
-            if(this.state.editMode == EditMode.DRAW) {
+            if(this.state.editMode === EditMode.DRAW) {
                 ds.ctx.fillStyle = "#B6465F44";
             }
             else {
@@ -663,6 +705,15 @@ class MapEditView extends Component {
                         <div className="link-button backButton" onClick={this.goBack}>
                             <img src="back.png" alt="Back"/>
                         </div>
+                        <input type="file" id="importFloorplan" className="hidden" accept=".png, .jpg, .jpeg" />
+                        <label
+                            htmlFor="importFloorplan"
+                            className="button-outline importButton"
+                            onClick={this.importFloorplan}
+                            >
+                            <img src="upload.svg" alt="Draw" />
+                            Import
+                        </label>
                         <Toggle
                             label="Snap"
                             on={this.state.snapEnabled}
@@ -706,7 +757,7 @@ class MapEditView extends Component {
                         </div>
                     </div>
                     <div className="mapContainer">
-                        <img src="floorplan.jpg" alt="Floorplan" />
+                        <img src="floorplan.jpg" id="floorplan" alt="Floorplan" />
                         <canvas
                             className={"mapEditCanvas" + (this.state.editMode === EditMode.DRAW ? " draw" : " select")}
                             tabIndex="-1"

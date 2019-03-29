@@ -59,16 +59,20 @@
     margin: 10px;
 }
 
-.mapEditView .toolBar .clearButton {
-    margin: 0 10px 0 20px;
-}
-
 .mapEditView .toolBar .backButton {
     font-size: 2em;
 }
 
+.mapEditView .toolBar .importButton {
+    margin-left: 20px;
+}
+
 .mapEditView .toolBar .toggle {
     margin: 20px;
+}
+
+.mapEditView .hidden {
+    display: none;
 }
 
 .mapEditView .contents {
