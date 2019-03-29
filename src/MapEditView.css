@@ -77,12 +77,12 @@
 
 .mapEditView .contents {
     flex-grow: 1;
-    background: white;
+    background: rgb(93, 93, 93);
     overflow-y: auto;
     display: flex;
     flex-flow: row nowrap;
     justify-content: center;
-    align-items: stretch;
+    align-items: center;
 }
 
 .mapEditView .mapContainer {
@@ -92,6 +92,8 @@
 }
 
 .mapEditView .mapContainer>img {
+    background-color: white;
+    border: 2px solid black;
     max-height: 99%;
     max-width: 99%;
 }
@@ -101,8 +103,8 @@
     display: block;
     top: 0;
     left: 0;
-    height: 100%;
-    width: 100%;
+    max-height: 100%;
+    max-width: 100%;
     outline: none;
 }
 

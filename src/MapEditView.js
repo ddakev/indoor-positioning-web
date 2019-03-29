@@ -182,8 +182,8 @@ class MapEditView extends Component {
             floorplan.setAttribute('src', fu.files[0].name);
             floorplan.onload = () => {
                 const ds = this.drawState;
-                ds.canvas.height = ds.canvas.offsetHeight;
-                ds.canvas.width = ds.canvas.offsetWidth;
+                ds.canvas.height = floorplan.offsetHeight;
+                ds.canvas.width = floorplan.offsetWidth;
                 this.drawState.polygons = [];
                 this.redraw();
             };
@@ -340,8 +340,8 @@ class MapEditView extends Component {
         floorplan.setAttribute('src', props.floorplan);
         floorplan.onload = () => {
             const ds = this.drawState;
-            ds.canvas.height = ds.canvas.offsetHeight;
-            ds.canvas.width = ds.canvas.offsetWidth;
+            ds.canvas.height = floorplan.offsetHeight;
+            ds.canvas.width = floorplan.offsetWidth;
             this.loadPolygons(props);
         };
     }
