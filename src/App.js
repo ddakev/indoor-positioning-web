@@ -32,12 +32,21 @@ class App extends Component {
     // Get current data from server
 
     // Get updates on tag locations and statuses from server
-    /*const socket = io(config.href + ":" + config.port);
+    const socket = io(config.href + ":" + config.port);
     socket.on('tagLocationUpdate', (msg) => {
-      let dummyEmployeeData = this.state.employeeData;
-      dummyEmployeeData[msg.id][msg.name].coords = {x: msg.x, y: msg.y};
-      this.setState({employeeData: dummyEmployeeData});
-    });*/
+        const employees = this.state.employeeData;
+        msg.forEach((equipment) => {
+            const employee = employees.find(e => e.employeeId === equipment.assignedEmployeeId);
+            if(employee) {
+                const equipIndex = employee.equips.findIndex(e => e.mac === equipment.mac);
+                if (equipIndex > -1) {
+                    employee.equips[equipIndex] = equipment;
+                }
+            }
+        });
+        // dummyEmployeeData[msg.id][msg.name].coords = {x: msg.x, y: msg.y};
+        this.setState({employeeData: employees});
+    });
   }
 
   fetchFloorplan() {
