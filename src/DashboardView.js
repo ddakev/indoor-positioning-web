@@ -92,12 +92,22 @@ class DashboardView extends Component {
                 <Link to="/mapEdit" className="button-outline">Edit Map</Link>
               </div>
             </div>
-            <Map 
-              data={this.props.employeeData.filter(this.state.filter)}
-              selectedId={this.state.selectedId}
-              onSelectedChange={this.changeSelectedId}
-              floorplan={this.props.floorplan}
-              />
+            {
+              this.props.floorplan
+                ? <Map 
+                    data={this.props.employeeData.filter(this.state.filter)}
+                    selectedId={this.state.selectedId}
+                    onSelectedChange={this.changeSelectedId}
+                    floorplan={this.props.floorplan}
+                    />
+                : <div
+                    className="mapPlaceholder"
+                    >
+                    <img src="map-missing.svg" alt="map-missing" />
+                    Nothing to see here
+                    <Link to="/mapEdit" className="button">Add Map</Link>
+                  </div>
+            }
           </div>
         </div>
       </div>

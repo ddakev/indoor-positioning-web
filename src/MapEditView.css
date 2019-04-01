@@ -166,3 +166,26 @@
     border-bottom: 1px solid rgb(220, 220, 220);
     margin: 5px 5px;
 }
+
+.mapEditView .mapPlaceholder {
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: rgb(180, 180, 180);
+    width: 100%;
+    height: 100%;
+    background: white;
+    position: absolute;
+}
+
+.mapEditView .mapPlaceholder .button {
+    margin-top: 20px;
+    text-transform: none;
+    font-weight: normal;
+}
+
+.mapEditView .mapPlaceholder img {
+    width: 150px;
+}

@@ -1023,6 +1023,15 @@ class MapEditView extends Component {
                             cancel={this.cancelRouterInfo}
                             />
                     </div>
+                    {
+                        this.props.floorplan === null && this.state.floorplanUpload === null ?
+                        <div className="mapPlaceholder">
+                            <img src="map-missing.svg" alt="map-missing" />
+                            You haven't uploaded a floorplan yet.
+                            <label htmlFor="importFloorplan" className="button">Upload Floorplan</label>
+                        </div>
+                        : null
+                    }
                 </div>
             </div>
         );
