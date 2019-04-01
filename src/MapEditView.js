@@ -3,6 +3,7 @@ import { Redirect } from 'react-router-dom';
 import './MapEditView.css';
 import config from './config.js';
 import Toggle from './Toggle.js';
+import RouterInputForm from './RouterInputForm';
 
 class Point {
     constructor(x, y) {
@@ -28,6 +29,14 @@ class MapEditView extends Component {
             snapEnabled: true,
             editMode: null,
             floorplanUpload: null,
+            routerInputVisible: false,
+            routerInputX: 0,
+            routerInputY: 0,
+            routerInputWidth: 0,
+            routerInputHeight: 0,
+            routerInputBssid: '',
+            routerInputSsid: '',
+            selectedRouter: null,
         };
 
         this.drawState = {
@@ -58,6 +67,8 @@ class MapEditView extends Component {
         this.selectKeyDownEventHandler = this.selectKeyDownEventHandler.bind(this);
         this.routersMoveEventHandler = this.routersMoveEventHandler.bind(this);
         this.routersClickEventHandler = this.routersClickEventHandler.bind(this);
+        this.saveRouterInfo = this.saveRouterInfo.bind(this);
+        this.cancelRouterInfo = this.cancelRouterInfo.bind(this);
         this.updateFloorplan = this.updateFloorplan.bind(this);
         this.importFloorplan = this.importFloorplan.bind(this);
         this.goBack = this.goBack.bind(this);
@@ -67,6 +78,7 @@ class MapEditView extends Component {
         this.drawVerts = this.drawVerts.bind(this);
         this.loadPolygons = this.loadPolygons.bind(this);
         this.loadFloorplan = this.loadFloorplan.bind(this);
+        this.loadRouters = this.loadRouters.bind(this);
         this.toggleSnap = this.toggleSnap.bind(this);
     }
 
@@ -139,8 +151,56 @@ class MapEditView extends Component {
             });
         }
         const fileUpload = this.importFloorplan();
-        Promise.all([updatePromise, fileUpload]).then(() => {
-            this.props.updateData();
+        // update routers
+        const routerPromise = new Promise((resolve, reject) => {
+            const deletePromises = [];
+            for(let i=0; i<this.props.routers.length; i++) {
+                deletePromises.push(new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.onreadystatechange = () => {
+                        if(xhr.readyState === 4) {
+                            if(xhr.status === 200) {
+                                resolve();
+                            }
+                            else {
+                                reject(xhr.responseText);
+                            }
+                        }
+                    };
+                    xhr.open('DELETE', config.api + "/router/delete/" + this.props.routers[i]["_id"]);
+                    xhr.send();
+                }));
+            }
+            Promise.all(deletePromises).then(() => {
+                const addPromises = [];
+                for(let i=0; i<this.drawState.routersPositions.length; i++) {
+                    addPromises.push(new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.onreadystatechange = () => {
+                            if(xhr.readyState === 4) {
+                                if(xhr.status === 200 || xhr.status === 201) {
+                                    resolve();
+                                }
+                                else {
+                                    reject(xhr.responseText);
+                                }
+                            }
+                        };
+                        xhr.open('POST', config.api + "/router/add");
+                        xhr.setRequestHeader("Content-type", "application/json");
+                        xhr.send(JSON.stringify({
+                            x: this.drawState.routersPositions[i].x,
+                            y: this.drawState.routersPositions[i].y,
+                            ssid: this.drawState.routersPositions[i].ssid,
+                            bssid: this.drawState.routersPositions[i].bssid,
+                        }));
+                    }));
+                }
+                Promise.all(addPromises).then(resolve).catch(reject);
+            }).catch(reject);
+        });
+        Promise.all([updatePromise, fileUpload, routerPromise]).then(() => {
+            this.props.updateFloorplan();
             this.goBack();
         });
     }
@@ -154,10 +214,15 @@ class MapEditView extends Component {
         setTimeout(() => {
             this.drawState.canvas.height = this.drawState.canvas.offsetHeight;
             this.drawState.canvas.width = this.drawState.canvas.offsetWidth;
+            this.setState({
+                routerInputWidth: this.drawState.canvas.width,
+                routerInputHeight: this.drawState.canvas.height
+            });
         }, 10);
         this.drawState.ctx = this.drawState.canvas.getContext('2d');
         this.loadPolygons(this.props);
         this.loadFloorplan(this.props);
+        this.loadRouters(this.props);
         this.switchToMode(EditMode.DRAW);
     }
 
@@ -172,6 +237,9 @@ class MapEditView extends Component {
         if(newProps.floorplan !== this.props.floorplan) {
             this.loadFloorplan(newProps);
         }
+        if(newProps.routers !== this.props.routers) {
+            this.loadRouters(newProps);
+        }
     }
 
     updateFloorplan() {
@@ -184,6 +252,10 @@ class MapEditView extends Component {
                 const ds = this.drawState;
                 ds.canvas.height = floorplan.offsetHeight;
                 ds.canvas.width = floorplan.offsetWidth;
+                this.setState({
+                    routerInputWidth: this.drawState.canvas.width,
+                    routerInputHeight: this.drawState.canvas.height
+                });
                 this.drawState.polygons = [];
                 this.drawState.vertices = [];
                 this.drawState.routersPositions = [];
@@ -266,7 +338,10 @@ class MapEditView extends Component {
         }
         else {
             for(let r=0; r<ds.routersPositions.length; r++) {
-                const CIRC_SIZE = 6;
+                let CIRC_SIZE = 6;
+                if(ds.hoverVert === ds.routersPositions[r]) {
+                    CIRC_SIZE = 8;
+                }
                 ds.ctx.beginPath();
                 ds.ctx.arc(ds.routersPositions[r].x, ds.routersPositions[r].y, CIRC_SIZE/2, 0, 2*Math.PI);
                 if(this.state.editMode === EditMode.DRAW) {
@@ -346,13 +421,23 @@ class MapEditView extends Component {
             const ds = this.drawState;
             ds.canvas.height = floorplan.offsetHeight;
             ds.canvas.width = floorplan.offsetWidth;
+            this.setState({
+                routerInputWidth: this.drawState.canvas.width,
+                routerInputHeight: this.drawState.canvas.height
+            });
             this.drawState.polygons = [];
             this.drawState.vertices = [];
             this.drawState.routersPositions = [];
             this.selectedVerts = [];
             this.hoverVert = null;
             this.loadPolygons(props);
+            this.loadRouters(props);
         };
+    }
+
+    loadRouters(props) {
+        const ds = this.drawState;
+        ds.routersPositions = JSON.parse(JSON.stringify(props.routers));
     }
 
     snapToClosestVertex(p) {
@@ -645,18 +730,24 @@ class MapEditView extends Component {
         if(e.keyCode === 46) {
             // Delete pressed
             const ds = this.drawState;
+            console.log(ds.selectedVerts);
             for(let i=ds.selectedVerts.length-1; i>=0; i--) {
-                for(let p=0; p<ds.polygons.length; p++) {
-                    const vertPos = ds.polygons[p].indexOf(ds.selectedVerts[i]);
-                    if(vertPos !== -1) {
-                        ds.polygons[p].splice(vertPos, 1);
-                        if(ds.polygons[p].length === 0) {
-                            ds.polygons.splice(p, 1);
+                if(ds.vertices.indexOf(ds.selectedVerts[i]) > -1) {
+                    for(let p=0; p<ds.polygons.length; p++) {
+                        const vertPos = ds.polygons[p].indexOf(ds.selectedVerts[i]);
+                        if(vertPos !== -1) {
+                            ds.polygons[p].splice(vertPos, 1);
+                            if(ds.polygons[p].length === 0) {
+                                ds.polygons.splice(p, 1);
+                            }
+                            break;
                         }
-                        break;
                     }
+                    ds.vertices.splice(ds.vertices.indexOf(ds.selectedVerts[i]), 1);
                 }
-                ds.vertices.splice(ds.vertices.indexOf(ds.selectedVerts[i]), 1);
+                else {
+                    ds.routersPositions.splice(ds.routersPositions.indexOf(ds.selectedVerts[i]), 1);
+                }
             }
             ds.selectedVerts = [];
             this.redraw();
@@ -669,12 +760,37 @@ class MapEditView extends Component {
         const y = e.clientY - ds.canvas.parentElement.offsetTop;
         const point = this.state.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
         const coords = e.shiftKey ? this.getAxisAlignedCoord(ds.lastPoint, point, 45) : point;
+        let hovering = false;
+        for(let i=0; i<ds.routersPositions.length; i++) {
+            if(Math.abs(ds.routersPositions[i].x - coords.x) < SNAP_THRESHOLD &&
+                Math.abs(ds.routersPositions[i].y - coords.y) < SNAP_THRESHOLD) {
+                    ds.hoverVert = ds.routersPositions[i];
+                    hovering = true;
+                    break;
+                }
+        }
         this.redraw();
+        if(hovering) return;
+        ds.hoverVert = null;
         const CIRC_SIZE = 6;
         ds.ctx.beginPath();
         ds.ctx.arc(coords.x, coords.y, CIRC_SIZE/2, 0, 2*Math.PI);
         ds.ctx.fillStyle = "#B6465F";
         ds.ctx.fill();
+        if(ds.snapLineX) {
+            ds.ctx.strokeStyle = "#04F06A";
+            ds.ctx.beginPath();
+            ds.ctx.moveTo(ds.snapLineX, 0);
+            ds.ctx.lineTo(ds.snapLineX, ds.canvas.height);
+            ds.ctx.stroke();
+        }
+        if(ds.snapLineY) {
+            ds.ctx.strokeStyle = "#FF445A";
+            ds.ctx.beginPath();
+            ds.ctx.moveTo(0, ds.snapLineY);
+            ds.ctx.lineTo(ds.canvas.width, ds.snapLineY);
+            ds.ctx.stroke();
+        }
     }
 
     routersClickEventHandler(e) {
@@ -683,8 +799,72 @@ class MapEditView extends Component {
         const y = e.clientY - ds.canvas.parentElement.offsetTop;
         const point = this.state.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
         const coords = e.shiftKey ? this.getAxisAlignedCoord(ds.lastPoint, point, 45) : point;
-        ds.routersPositions.push(coords);
-        this.redraw();
+        let clickedRouter = null;
+        for(let i=0; i<ds.routersPositions.length; i++) {
+            if(Math.abs(ds.routersPositions[i].x - coords.x) < SNAP_THRESHOLD &&
+                Math.abs(ds.routersPositions[i].y - coords.y) < SNAP_THRESHOLD) {
+                    clickedRouter = i;
+                    break;
+                }
+        }
+        if(clickedRouter === null) {
+            ds.routersPositions.push({
+                x: coords.x,
+                y: coords.y,
+                ssid: '',
+                bssid: '',
+            });
+            this.redraw();
+            this.setState({
+                routerInputVisible: true,
+                routerInputX: coords.x,
+                routerInputY: coords.y,
+                selectedRouter: ds.routersPositions.length-1,
+                routerInputBssid: ds.routersPositions[ds.routersPositions.length-1].bssid,
+                routerInputSsid: ds.routersPositions[ds.routersPositions.length-1].ssid,
+            });
+            document.getElementById("ssid").focus();
+        }
+        else {
+            this.setState({
+                routerInputVisible: true,
+                routerInputX: ds.routersPositions[clickedRouter].x,
+                routerInputY: ds.routersPositions[clickedRouter].y,
+                selectedRouter: clickedRouter,
+                routerInputBssid: ds.routersPositions[clickedRouter].bssid,
+                routerInputSsid: ds.routersPositions[clickedRouter].ssid,
+            });
+            document.getElementById("ssid").focus();
+        }
+    }
+
+    saveRouterInfo(data) {
+        const ds = this.drawState;
+        const id = this.state.selectedRouter;
+        for(let prop in data) {
+            if(data.hasOwnProperty(prop)) {
+                ds.routersPositions[id][prop] = data[prop];
+            }
+        }
+
+        this.setState({
+            routerInputVisible: false,
+            selectedRouter: null,
+        });
+    }
+
+    cancelRouterInfo() {
+        const ds = this.drawState;
+        const id = this.state.selectedRouter;
+        if(!ds.routersPositions[id]["ssid"] || !ds.routersPositions[id]["bssid"]) {
+            ds.routersPositions.splice(id, 1);
+            this.redraw();
+        }
+
+        this.setState({
+            routerInputVisible: false,
+            selectedRouter: null,
+        });
     }
 
     isPointInsidePolygon(point, poly) {
@@ -813,6 +993,7 @@ class MapEditView extends Component {
                             className={"button-toolbox" + (this.state.editMode === EditMode.ROUTERS ? " selected" : "")}
                             onClick={() => this.switchToMode(EditMode.ROUTERS)}
                             >
+                            <img src="routers.svg" alt="Routers" />
                             Routers
                         </div>
                         <div className="toolbox-divider" />
@@ -829,6 +1010,17 @@ class MapEditView extends Component {
                         <canvas
                             className={"mapEditCanvas" + (this.state.editMode === EditMode.DRAW ? " draw" : " select")}
                             tabIndex="-1"
+                            />
+                        <RouterInputForm
+                            x={this.state.routerInputX}
+                            y={this.state.routerInputY}
+                            width={this.state.routerInputWidth}
+                            height={this.state.routerInputHeight}
+                            visible={this.state.routerInputVisible}
+                            ssid={this.state.routerInputSsid}
+                            bssid={this.state.routerInputBssid}
+                            save={this.saveRouterInfo}
+                            cancel={this.cancelRouterInfo}
                             />
                     </div>
                 </div>

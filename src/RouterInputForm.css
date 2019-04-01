@@ -1,0 +1,49 @@
+.routerInputForm {
+    position: absolute;
+    overflow: hidden;
+    top:0;
+    left:0;
+    right:0;
+    bottom:4px;
+}
+
+.routerInputForm .form {
+    position:absolute;
+    background: white;
+    border: 1px solid rgb(200, 200, 200);
+    padding: 8px 10px;
+    border-radius: 10px;
+    box-shadow: 2px 3px 15px 0px rgba(40, 40, 40, 0.3);
+    box-sizing: border-box;
+    z-index: 1;
+}
+
+.routerInputForm.hidden {
+    visibility: hidden;
+}
+
+.routerInputForm .arrow {
+    display: block;
+    border: 10px solid transparent;
+    position: absolute;
+    margin-left: -10px;
+    z-index: 2;
+}
+
+.routerInputForm .arrow.up {
+    border-bottom-color: rgb(200, 200, 200);
+    top: -20px;
+}
+
+.routerInputForm .arrow.down {
+    border-top-color: rgb(200, 200, 200);
+    bottom: -20px;
+}
+
+.routerInputForm .form .textInput {
+    margin-bottom: 15px;
+}
+
+.routerInputForm .form .cancelButton {
+    margin-left: 20px;
+}

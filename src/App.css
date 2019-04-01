@@ -9,6 +9,9 @@
     padding: 10px 25px;
     background: rgb(119, 187, 255);
     border-radius: 8px;
+    border: none;
+    font-family: inherit;
+    font-size: 12pt;
     color: white;
     text-transform: uppercase;
     box-shadow: 0px 1px 8px -3px rgba(0, 0, 0, 0.4);
@@ -46,6 +49,10 @@
     display: inline;
     color: rgb(78, 137, 197);
     cursor: pointer;
+    background: none;
+    border: none;
+    font-size: 12pt;
+    font-family: inherit;
 }
 
 .App .link-button>img {

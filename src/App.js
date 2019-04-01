@@ -18,6 +18,7 @@ class App extends Component {
       employees: [],
       equipments: [],
       geofences: null,
+      routers: [],
       floorplan: null,
     };
 
@@ -40,26 +41,53 @@ class App extends Component {
   }
 
   fetchFloorplan() {
-    new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.onreadystatechange = () => {
-        if(xhr.readyState === 4) {
-          if(xhr.status === 200) {
-            resolve(JSON.parse(xhr.responseText));
-          }
-          else {
-            reject(xhr.responseText);
-          }
+    // floorplan image
+    const floorxhr = new XMLHttpRequest();
+    floorxhr.onreadystatechange = () => {
+      if(floorxhr.readyState === 4) {
+        if(floorxhr.status === 200) {
+          this.setState({floorplan: JSON.parse(floorxhr.responseText).imgData});
         }
-      };
-      xhr.open('GET', config.api + "/floorplan/get");
-      xhr.send();
-    }).then(response => {
-      this.setState({floorplan: response.imgData});
-    }).catch(err => {
-      this.setState({floorplan: null});
-      console.log(err);
-    });
+        else {
+          this.setState({floorplan: null});
+          console.log(floorxhr.responseText);
+        }
+      }
+    };
+    floorxhr.open('GET', config.api + "/floorplan/get");
+    floorxhr.send();
+
+    // geofences
+    const fencexhr = new XMLHttpRequest();
+    fencexhr.onreadystatechange = () => {
+      if(fencexhr.readyState === 4) {
+        if(fencexhr.status === 200) {
+          this.setState({geofences: JSON.parse(fencexhr.responseText).boundaries});
+        }
+        else {
+          this.setState({geofences: null});
+          console.log(fencexhr.responseText);
+        }
+      }
+    };
+    fencexhr.open('GET', config.api + "/geofence/get");
+    fencexhr.send();
+
+    // routers
+    const routexhr = new XMLHttpRequest();
+    routexhr.onreadystatechange = () => {
+      if(routexhr.readyState === 4) {
+        if(routexhr.status === 200) {
+          this.setState({routers: JSON.parse(routexhr.responseText)});
+        }
+        else {
+          this.setState({routers: []});
+          console.log(routexhr.responseText);
+        }
+      }
+    };
+    routexhr.open('GET', config.api + "/router/get/all");
+    routexhr.send();
   }
 
   fetchData() {
@@ -109,28 +137,6 @@ class App extends Component {
       }
       this.setState({employeeData: emps});
     });
-
-    // equipment
-    new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.onreadystatechange = () => {
-        if(xhr.readyState === 4) {
-          if(xhr.status === 200) {
-            resolve(JSON.parse(xhr.responseText));
-          }
-          else {
-            reject(xhr.responseText);
-          }
-        }
-      };
-      xhr.open('GET', config.api + "/geofence/get");
-      xhr.send();
-    }).then(geofences => {
-      this.setState({geofences: geofences.boundaries});
-    }).catch(err => {
-      this.setState({geofences: null});
-      console.log(err);
-    });
   }
 
   render() {
@@ -147,9 +153,9 @@ class App extends Component {
           <Route path="/mapEdit" render={() => (
             <MapEditView
               geofenceData={this.state.geofences}
-              updateData={this.fetchData}
               updateFloorplan={this.fetchFloorplan}
               floorplan={this.state.floorplan}
+              routers={this.state.routers}
               />
           )} />
           <Route path="/employeeEdit" render={() => (

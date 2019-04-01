@@ -60,6 +60,9 @@
 }
 
 .employeeEditView .toolBar .backButton {
+    display: inline-flex;
+    flex-flow: row nowrap;
+    align-items: center;
     font-size: 2em;
 }
 

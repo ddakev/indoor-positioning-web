@@ -1,0 +1,26 @@
+.textInput {
+}
+
+.textInput .textInputField {
+    border: none;
+    border-bottom: 2px solid rgb(200, 200, 200);
+    font-size: 12pt;
+    padding: 2px 2px 5px 2px;
+    display: block;
+    outline: none;
+    transition: border-bottom-color 0.3s;
+    max-width: 150px;
+}
+
+.textInput .textInputField:focus {
+    border-bottom: 2px solid rgb(119, 187, 255);
+}
+
+.textInput .textInputLabel {
+    text-transform: uppercase;
+    display: block;
+    font-size: 8pt;
+    font-weight: bold;
+    color: rgb(80, 80, 80);
+    margin-left: 0px;
+}
