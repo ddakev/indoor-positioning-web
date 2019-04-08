@@ -1,9 +1,16 @@
 const app = require('express')();
 const server = require('http').Server(app);
-const PORT = require('../src/config.js').port;
+const PORT = 3030;
 
 let employees = [];
 seedRandomData();
+
+const SerialPort = require('serialport');
+const scanner = require('node-wifi');
+
+scanner.init({
+    iface : null // network interface, choose a random wifi interface if set to null
+});
 
 
 // Set up socket.io server
@@ -29,6 +36,41 @@ app.use((req, res, next) => {
 	res.header('Access-Control-Allow-Headers', 'Content-Type');
 	res.header("Access-Control-Allow-Origin", "*");
   next();
+});
+
+const port = new SerialPort('COM3', function(err) {
+	if(err) {
+		console.log('Error: ' + err.message);
+	}
+});
+
+port.on('readable', function() {
+	console.log('Data: ', port.read().toString());
+});
+
+port.write('test', function(err) {
+	if(err) {
+		console.log(err);
+	}
+	console.log('test sent');
+});
+
+app.get('/wifiScan', (req, res) => {
+	scanner.scan((err, networks) => {
+	  if (err) {
+		res.status(404).send(err);
+		return;
+	  }
+	  //console.log(networks);
+	  networks = networks.map(sample => {return {
+		  ssid: sample.ssid,
+		  bssid: sample.mac,
+		  rssi: sample.signal_level,
+		  channel: sample.channel,
+	  };}).sort((a, b) => b.rssi - a.rssi);
+	  console.log(networks);
+	  res.status(200).send(JSON.stringify(networks));
+	});
 });
 
 app.get('/employeeData', (req, res) => {

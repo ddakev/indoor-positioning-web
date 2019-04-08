@@ -19,6 +19,7 @@ class App extends Component {
       equipments: [],
       geofences: null,
       routers: [],
+      training: [],
       floorplan: null,
     };
 
@@ -32,12 +33,20 @@ class App extends Component {
     // Get current data from server
 
     // Get updates on tag locations and statuses from server
-    /*const socket = io(config.href + ":" + config.port);
+    const socket = io(config.href + ":" + config.port);
     socket.on('tagLocationUpdate', (msg) => {
-      let dummyEmployeeData = this.state.employeeData;
-      dummyEmployeeData[msg.id][msg.name].coords = {x: msg.x, y: msg.y};
-      this.setState({employeeData: dummyEmployeeData});
-    });*/
+      const employees = this.state.employeeData;
+      msg.forEach((equipment) => {
+        const employee = employees.find(e => e.employeeId === equipment.assignedEmployeeId);
+        if(employee) {
+            const equipIndex = employee.equips.findIndex(e => e.mac === equipment.mac);
+            if (equipIndex > -1) {
+                employee.equips[equipIndex] = equipment;
+            }
+          }
+        });
+        this.setState({employeeData: employees});
+    });
   }
 
   fetchFloorplan() {
@@ -88,6 +97,22 @@ class App extends Component {
     };
     routexhr.open('GET', config.api + "/router/get/all");
     routexhr.send();
+
+    // training data
+    const trainingxhr = new XMLHttpRequest();
+    trainingxhr.onreadystatechange = () => {
+      if(trainingxhr.readyState === 4) {
+        if(trainingxhr.status === 200) {
+          this.setState({training: JSON.parse(trainingxhr.responseText)});
+        }
+        else {
+          this.setState({training: []});
+          console.log(trainingxhr.responseText);
+        }
+      }
+    };
+    trainingxhr.open('GET', config.api + "/training/get/all");
+    trainingxhr.send();
   }
 
   fetchData() {
@@ -156,6 +181,7 @@ class App extends Component {
               updateFloorplan={this.fetchFloorplan}
               floorplan={this.state.floorplan}
               routers={this.state.routers}
+              trainingData={this.state.training}
               />
           )} />
           <Route path="/employeeEdit" render={() => (

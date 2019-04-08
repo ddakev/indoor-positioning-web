@@ -16,6 +16,7 @@ const EditMode = {
     DRAW: "DRAW",
     SELECT: "SELECT",
     ROUTERS: "ROUTERS",
+    COLLECT: "COLLECT",
 };
 
 const SNAP_THRESHOLD = 8;
@@ -57,6 +58,8 @@ class MapEditView extends Component {
             dragSelectHandled: false,
             draggedVerts: [],
             routersPositions: [],
+            collectedSamples: [],
+            messageTimeout: null,
         };
         this.drawClickEventHandler = this.drawClickEventHandler.bind(this);
         this.drawMoveEventHandler = this.drawMoveEventHandler.bind(this);
@@ -67,6 +70,7 @@ class MapEditView extends Component {
         this.selectKeyDownEventHandler = this.selectKeyDownEventHandler.bind(this);
         this.routersMoveEventHandler = this.routersMoveEventHandler.bind(this);
         this.routersClickEventHandler = this.routersClickEventHandler.bind(this);
+        this.collectClickEventHandler = this.collectClickEventHandler.bind(this);
         this.saveRouterInfo = this.saveRouterInfo.bind(this);
         this.cancelRouterInfo = this.cancelRouterInfo.bind(this);
         this.updateFloorplan = this.updateFloorplan.bind(this);
@@ -79,6 +83,7 @@ class MapEditView extends Component {
         this.loadPolygons = this.loadPolygons.bind(this);
         this.loadFloorplan = this.loadFloorplan.bind(this);
         this.loadRouters = this.loadRouters.bind(this);
+        this.loadTraining = this.loadTraining.bind(this);
         this.toggleSnap = this.toggleSnap.bind(this);
     }
 
@@ -92,7 +97,7 @@ class MapEditView extends Component {
             const geofences = {"boundaries": this.drawState.polygons.map(poly => {
                 return {
                     "vertices": poly.map(vert => {return {x: vert.x / this.drawState.canvas.offsetWidth, y: vert.y / this.drawState.canvas.offsetHeight};}),
-                    "safetyLevel": "safe"
+                    "safetyLevel": "danger"
                 };
             })};
             updatePromise = new Promise((resolve, reject) => {
@@ -142,7 +147,8 @@ class MapEditView extends Component {
                             resolve();
                         }
                         else {
-                            reject(xhr.responseText);
+                            console.log(xhr.responseText);
+                            resolve();
                         }
                     }
                 };
@@ -199,6 +205,7 @@ class MapEditView extends Component {
                 Promise.all(addPromises).then(resolve).catch(reject);
             }).catch(reject);
         });
+
         Promise.all([updatePromise, fileUpload, routerPromise]).then(() => {
             this.props.updateFloorplan();
             this.goBack();
@@ -223,11 +230,14 @@ class MapEditView extends Component {
         this.loadPolygons(this.props);
         this.loadFloorplan(this.props);
         this.loadRouters(this.props);
+        this.loadTraining(this.props);
         this.switchToMode(EditMode.DRAW);
     }
 
     componentWillUnmount() {
         this.switchToMode(null);
+        clearTimeout(this.drawState.messageTimeout);
+        this.drawState.messageTimeout = null;
     }
 
     componentWillReceiveProps(newProps) {
@@ -239,6 +249,9 @@ class MapEditView extends Component {
         }
         if(newProps.routers !== this.props.routers) {
             this.loadRouters(newProps);
+        }
+        if(newProps.trainingData !== this.props.trainingData) {
+            this.loadTraining(newProps);
         }
     }
 
@@ -259,6 +272,7 @@ class MapEditView extends Component {
                 this.drawState.polygons = [];
                 this.drawState.vertices = [];
                 this.drawState.routersPositions = [];
+                this.drawState.collectedSamples = [];
                 this.selectedVerts = [];
                 this.hoverVert = null;
                 this.redraw();
@@ -313,6 +327,7 @@ class MapEditView extends Component {
         this.drawState.polygons = [];
         this.drawState.vertices = [];
         this.drawState.routersPositions = [];
+        this.drawState.collectedSamples = [];
         this.redraw();
     }
     
@@ -331,6 +346,13 @@ class MapEditView extends Component {
             ds.ctx.fillStyle = "#77bbff22";
             ds.ctx.strokeStyle = "black";
             ds.ctx.stroke();
+            ds.ctx.fill();
+        }
+        for(let c=0; c<ds.collectedSamples.length; c++) {
+            let CIRC_SIZE = 4;
+            ds.ctx.beginPath();
+            ds.ctx.arc(ds.collectedSamples[c].x, ds.collectedSamples[c].y, CIRC_SIZE/2, 0, 2*Math.PI);
+            ds.ctx.fillStyle = "black";
             ds.ctx.fill();
         }
         if(this.state.editMode === EditMode.SELECT) {
@@ -428,16 +450,28 @@ class MapEditView extends Component {
             this.drawState.polygons = [];
             this.drawState.vertices = [];
             this.drawState.routersPositions = [];
+            this.drawState.collectedSamples = [];
             this.selectedVerts = [];
             this.hoverVert = null;
             this.loadPolygons(props);
             this.loadRouters(props);
+            this.loadTraining(props);
         };
     }
 
     loadRouters(props) {
         const ds = this.drawState;
         ds.routersPositions = JSON.parse(JSON.stringify(props.routers));
+    }
+
+    loadTraining(props) {
+        const ds = this.drawState;
+        ds.collectedSamples = JSON.parse(JSON.stringify(props.trainingData)).map(sample => {return {
+            x: sample.x * ds.canvas.offsetWidth,
+            y: sample.y * ds.canvas.offsetHeight,
+            wifiScan: sample.wifiScan,
+        };});
+        setTimeout(this.redraw, 10);
     }
 
     snapToClosestVertex(p) {
@@ -838,6 +872,55 @@ class MapEditView extends Component {
         }
     }
 
+    collectClickEventHandler(e) {
+        const ds = this.drawState;
+        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        
+        this.showMessage("Collecting Data", 10000);
+        new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = () => {
+                if(xhr.readyState === 4) {
+                    if(xhr.status === 200 || xhr.status === 201) {
+                        resolve();
+                    }
+                    else {
+                        reject(xhr.responseText);
+                    }
+                }
+            };
+            xhr.open('POST', config.api + "/training/add/label");
+            xhr.setRequestHeader("Content-type", "application/json");
+            xhr.send(JSON.stringify({x: x, y: y}));
+        }).then(() => {
+            this.showMessage("Data collected.", 1000);
+            ds.collectedSamples.push({
+                x: x,
+                y: y,
+                wifiScan: null,
+            });
+        }).catch(err => {
+            this.showMessage(err, 5000);
+        });
+        
+        this.redraw();
+    }
+
+    showMessage(msg, duration) {
+        const messageBox = document.getElementsByClassName("message")[0];
+        if(!messageBox) return;
+        messageBox.textContent = msg;
+        messageBox.className = "message";
+        if(this.drawState.messageTimeout) {
+            clearTimeout(this.drawState.messageTimeout);
+        }
+        this.drawState.messageTimeout = setTimeout(() => {
+            messageBox.className = "message hidden";
+            this.drawState.messageTimeout = null;
+        }, duration);
+    }
+
     saveRouterInfo(data) {
         const ds = this.drawState;
         const id = this.state.selectedRouter;
@@ -912,6 +995,9 @@ class MapEditView extends Component {
                 canvas.removeEventListener("mousemove", this.routersMoveEventHandler);
                 canvas.removeEventListener("click", this.routersClickEventHandler);
                 break;
+            case EditMode.COLLECT:
+                canvas.removeEventListener("click", this.collectClickEventHandler);
+                break;
             default:
                 break;
         }
@@ -930,6 +1016,9 @@ class MapEditView extends Component {
                 canvas.addEventListener("mousemove", this.routersMoveEventHandler);
                 canvas.addEventListener("click", this.routersClickEventHandler);
                 break;
+            case EditMode.COLLECT:
+                canvas.addEventListener("click", this.collectClickEventHandler);
+                break;
             default:
                 break;
         }
@@ -940,6 +1029,9 @@ class MapEditView extends Component {
         return (
             <div className="mapEditView">
                 {this.state.shouldRedirect ? <Redirect to="/" /> : null}
+                <div className="message hidden">
+                    Error Message
+                </div>
                 <div className="titleBar">
                     <h1>Indoor Positioning Monitor</h1>
                 </div>
@@ -995,6 +1087,12 @@ class MapEditView extends Component {
                             >
                             <img src="routers.svg" alt="Routers" />
                             Routers
+                        </div>
+                        <div
+                            className={"button-toolbox" + (this.state.editMode === EditMode.COLLECT ? " selected" : "")}
+                            onClick={() => this.switchToMode(EditMode.COLLECT)}
+                            >
+                            Train
                         </div>
                         <div className="toolbox-divider" />
                         <div

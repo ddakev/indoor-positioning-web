@@ -6,6 +6,17 @@
     align-items: stretch;
 }
 
+.mapEditView .message {
+    position: absolute;
+    top: 20px;
+    padding: 15px 20px;
+    background: white;
+    z-index: 9000;
+    align-self: center;
+    border-radius: 8px;
+    border: 1px solid rgb(150, 150, 150);
+}
+
 .mapEditView .titleBar {
     height: 60px;
     background: rgb(70, 70, 70);
