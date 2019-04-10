@@ -260,7 +260,7 @@ class MapEditView extends Component {
         const fu = document.getElementById("importFloorplan");
         if(fu.files.length === 1) {
             this.setState({floorplanUpload: fu.files[0]});
-            floorplan.setAttribute('src', fu.files[0].name);
+            floorplan.setAttribute('src', URL.createObjectURL(fu.files[0]));
             floorplan.onload = () => {
                 const ds = this.drawState;
                 ds.canvas.height = floorplan.offsetHeight;
