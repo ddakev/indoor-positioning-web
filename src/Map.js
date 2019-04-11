@@ -12,19 +12,22 @@ class Map extends Component {
                         this.props.data.map((employee, index) => {
                             let items = [];
                             for(let i=0; i<employee.equips.length; i++) {
+                                let safety = "safe";
                                 if(!employee.equips[i].isWorn && !employee.equips[i].inSafeArea) {
-                                    items.push(
-                                        <MapIndicator
-                                            x={employee.equips[i].latestX}
-                                            y={employee.equips[i].latestY}
-                                            id={employee.employeeId}
-                                            desc={{name: employee.firstName + " " + employee.lastName, equipment: employee.equips[i].name}}
-                                            selected={this.props.selectedId === employee.employeeId}
-                                            onSelected={id => this.props.onSelectedChange(id)}
-                                            key={index + "" + i}
-                                            />
-                                    );
+                                    safety = "danger";
                                 }
+                                items.push(
+                                    <MapIndicator
+                                        x={employee.equips[i].latestX}
+                                        y={employee.equips[i].latestY}
+                                        id={employee.employeeId}
+                                        desc={{name: employee.firstName + " " + employee.lastName, equipment: employee.equips[i].name}}
+                                        selected={this.props.selectedId === employee.employeeId}
+                                        onSelected={id => this.props.onSelectedChange(id)}
+                                        key={index + "" + i}
+                                        safety={safety}
+                                        />
+                                );
                             }
                             return items;
                         })

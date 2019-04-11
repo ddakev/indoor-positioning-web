@@ -1,5 +1,5 @@
 .mapIndicator {
-    background: rgb(119, 187, 255);
+    background: rgb(120, 120, 120);
     width: 10px;
     height: 10px;
     margin-left: -5px;
@@ -14,7 +14,15 @@
     white-space: nowrap;
 }
 
-@keyframes pulse {
+.mapIndicator.safe {
+    background: rgb(119, 187, 255);
+}
+
+.mapIndicator.danger {
+    background: rgb(245, 100, 118);
+}
+
+@keyframes pulse-blue {
     0% {
         width: 0%;
         height: 0%;
@@ -32,17 +40,45 @@
     }
 }
 
+@keyframes pulse-red {
+    0% {
+        width: 0%;
+        height: 0%;
+        box-shadow: 0px 0px 3px 5px rgba(245, 100, 118, 0.5);
+    }
+    50% {
+        width: 500%;
+        height: 500%;
+        box-shadow: 0px 0px 0px 0px rgba(245, 100, 118, 0.5);
+    }
+    100% {
+        width: 500%;
+        height: 500%;
+        box-shadow: 0px 0px 0px 0px rgba(245, 100, 118, 0.5);
+    }
+}
+
 .mapIndicator::before {
     content: '';
     display: block;
     width: 100%;
     height: 100%;
     border-radius: 100%;
-    box-shadow: 0px 0px 3px 5px rgba(119, 187, 255, 0.5);
-    animation: pulse 2s;
-    animation-iteration-count: infinite;
+    box-shadow: 0px 0px 3px 5px rgba(120, 120, 120, 0.5);
     position:absolute;
     pointer-events: none;
+}
+
+.mapIndicator.safe::before {
+    box-shadow: 0px 0px 3px 5px rgba(119, 187, 255, 0.5);
+    animation: pulse-blue 2s;
+    animation-iteration-count: infinite;
+}
+
+.mapIndicator.danger::before {
+    box-shadow: 0px 0px 3px 5px rgba(245, 100, 118, 0.5);
+    animation: pulse-red 2s;
+    animation-iteration-count: infinite;
 }
 
 .mapIndicator .description {

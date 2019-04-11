@@ -10,7 +10,7 @@ class MapIndicator extends Component {
         const hiddenClass = this.props.selected ? "" : " hidden";
         return (
                 <div
-                    className="mapIndicator"
+                    className={"mapIndicator " + this.props.safety}
                     style={inlineStyle}
                     onClick={() => this.props.onSelected(this.props.id)}
                     >

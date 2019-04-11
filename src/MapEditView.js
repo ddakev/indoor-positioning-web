@@ -4,6 +4,7 @@ import './MapEditView.css';
 import config from './config.js';
 import Toggle from './Toggle.js';
 import RouterInputForm from './RouterInputForm';
+import ScaleInputForm from './ScaleInputForm';
 
 class Point {
     constructor(x, y) {
@@ -17,6 +18,7 @@ const EditMode = {
     SELECT: "SELECT",
     ROUTERS: "ROUTERS",
     COLLECT: "COLLECT",
+    SCALE: "SCALE",
 };
 
 const SNAP_THRESHOLD = 8;
@@ -38,6 +40,7 @@ class MapEditView extends Component {
             routerInputBssid: '',
             routerInputSsid: '',
             selectedRouter: null,
+            scaleInputVisible: false,
         };
 
         this.drawState = {
@@ -60,6 +63,9 @@ class MapEditView extends Component {
             routersPositions: [],
             collectedSamples: [],
             messageTimeout: null,
+            scaleSegment: [],
+            scaleX: 1,
+            scaleY: 1,
         };
         this.drawClickEventHandler = this.drawClickEventHandler.bind(this);
         this.drawMoveEventHandler = this.drawMoveEventHandler.bind(this);
@@ -71,6 +77,9 @@ class MapEditView extends Component {
         this.routersMoveEventHandler = this.routersMoveEventHandler.bind(this);
         this.routersClickEventHandler = this.routersClickEventHandler.bind(this);
         this.collectClickEventHandler = this.collectClickEventHandler.bind(this);
+        this.scaleMouseDownEventHandler = this.scaleMouseDownEventHandler.bind(this);
+        this.scaleMouseMoveEventHandler = this.scaleMouseMoveEventHandler.bind(this);
+        this.scaleMouseUpEventHandler = this.scaleMouseUpEventHandler.bind(this);
         this.saveRouterInfo = this.saveRouterInfo.bind(this);
         this.cancelRouterInfo = this.cancelRouterInfo.bind(this);
         this.updateFloorplan = this.updateFloorplan.bind(this);
@@ -195,8 +204,8 @@ class MapEditView extends Component {
                         xhr.open('POST', config.api + "/router/add");
                         xhr.setRequestHeader("Content-type", "application/json");
                         xhr.send(JSON.stringify({
-                            x: this.drawState.routersPositions[i].x,
-                            y: this.drawState.routersPositions[i].y,
+                            x: this.drawState.routersPositions[i].x / this.drawState.canvas.offsetWidth,
+                            y: this.drawState.routersPositions[i].y / this.drawState.canvas.offsetHeight,
                             ssid: this.drawState.routersPositions[i].ssid,
                             bssid: this.drawState.routersPositions[i].bssid,
                         }));
@@ -375,6 +384,13 @@ class MapEditView extends Component {
                 ds.ctx.fill();
             }
         }
+        if(this.state.editMode === EditMode.SCALE && ds.scaleSegment.length === 2) {
+            ds.ctx.beginPath();
+            ds.ctx.moveTo(ds.scaleSegment[0].x, ds.scaleSegment[0].y);
+            ds.ctx.lineTo(ds.scaleSegment[1].x, ds.scaleSegment[1].y);
+            ds.ctx.strokeStyle = "#000";
+            ds.ctx.stroke();
+        }
     }
 
     drawVerts() {
@@ -462,6 +478,14 @@ class MapEditView extends Component {
     loadRouters(props) {
         const ds = this.drawState;
         ds.routersPositions = JSON.parse(JSON.stringify(props.routers));
+        ds.routersPositions = ds.routersPositions.map(router => {
+            return {
+                bssid: router.bssid,
+                ssid: router.ssid,
+                x: router.x * ds.canvas.offsetWidth,
+                y: router.y * ds.canvas.offsetHeight,
+            };
+        });
     }
 
     loadTraining(props) {
@@ -907,6 +931,46 @@ class MapEditView extends Component {
         this.redraw();
     }
 
+    scaleMouseDownEventHandler(e) {
+        const ds = this.drawState;
+        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        
+        ds.scaleSegment = [{x, y}];
+    }
+
+    scaleMouseMoveEventHandler(e) {
+        const ds = this.drawState;
+        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+
+        if(ds.scaleSegment.length === 1) {
+            this.redraw();
+            ds.ctx.beginPath();
+            ds.ctx.moveTo(ds.scaleSegment[0].x, ds.scaleSegment[0].y);
+            ds.ctx.lineTo(x, y);
+            ds.ctx.strokeStyle = "#000";
+            ds.ctx.stroke();
+        }
+    }
+
+    scaleMouseUpEventHandler(e) {
+        const ds = this.drawState;
+        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+
+        if(ds.scaleSegment.length === 1) {
+            ds.scaleSegment.push({x, y});
+            this.setState({
+                scaleInputVisible: true,
+                routerInputX: x,
+                routerInputY: y,
+                selectedRouter: ds.routersPositions.length-1,
+            });
+            document.getElementById("scale").focus();
+        }
+    }
+
     showMessage(msg, duration) {
         const messageBox = document.getElementsByClassName("message")[0];
         if(!messageBox) return;
@@ -947,6 +1011,24 @@ class MapEditView extends Component {
         this.setState({
             routerInputVisible: false,
             selectedRouter: null,
+        });
+    }
+
+    saveScale(data) {
+        const ds = this.drawState;
+        const pixelLength = Math.sqrt((ds.scaleSegment[0].x - ds.scaleSegment[1].x) ** 2 + (ds.scaleSegment[0].y - ds.scaleSegment[1].y) ** 2);
+        const pixelScale = data.scale / pixelLength; // in meters per pixel
+        ds.scaleX = pixelScale * ds.canvas.offsetWidth; // in meters per width
+        ds.scaleY = pixelScale * ds.canvas.offsetHeight; // in meters per height
+        console.log(ds.scaleX, ds.scaleY);
+    }
+
+    cancelScale() {
+        const ds = this.drawState;
+        ds.scaleSegment = [];
+        this.redraw();
+        this.setState({
+            scaleInputVisible: false,
         });
     }
 
@@ -998,6 +1080,11 @@ class MapEditView extends Component {
             case EditMode.COLLECT:
                 canvas.removeEventListener("click", this.collectClickEventHandler);
                 break;
+            case EditMode.SCALE:
+                canvas.removeEventListener("mousedown", this.scaleMouseDownEventHandler);
+                canvas.removeEventListener("mousemove", this.scaleMouseMoveEventHandler);
+                canvas.removeEventListener("mouseup", this.scaleMouseUpEventHandler);
+                break;
             default:
                 break;
         }
@@ -1018,6 +1105,11 @@ class MapEditView extends Component {
                 break;
             case EditMode.COLLECT:
                 canvas.addEventListener("click", this.collectClickEventHandler);
+                break;
+            case EditMode.SCALE:
+                canvas.addEventListener("mousedown", this.scaleMouseDownEventHandler);
+                canvas.addEventListener("mousemove", this.scaleMouseMoveEventHandler);
+                canvas.addEventListener("mouseup", this.scaleMouseUpEventHandler);
                 break;
             default:
                 break;
@@ -1094,6 +1186,12 @@ class MapEditView extends Component {
                             >
                             Train
                         </div>
+                        <div
+                            className={"button-toolbox" + (this.state.editMode === EditMode.SCALE ? " selected" : "")}
+                            onClick={() => this.switchToMode(EditMode.SCALE)}
+                            >
+                            Set Scale
+                        </div>
                         <div className="toolbox-divider" />
                         <div
                             className="button-toolbox"
@@ -1119,6 +1217,15 @@ class MapEditView extends Component {
                             bssid={this.state.routerInputBssid}
                             save={this.saveRouterInfo}
                             cancel={this.cancelRouterInfo}
+                            />
+                        <ScaleInputForm
+                            x={this.state.routerInputX}
+                            y={this.state.routerInputY}
+                            width={this.state.routerInputWidth}
+                            height={this.state.routerInputHeight}
+                            visible={this.state.scaleInputVisible}
+                            save={this.saveScale}
+                            cancel={this.cancelScale}
                             />
                     </div>
                     {
