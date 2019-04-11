@@ -96,6 +96,7 @@ class MapEditView extends Component {
         this.loadRouters = this.loadRouters.bind(this);
         this.loadTraining = this.loadTraining.bind(this);
         this.toggleSnap = this.toggleSnap.bind(this);
+        this.windowResize = this.windowResize.bind(this);
     }
 
     goBack() {
@@ -227,6 +228,22 @@ class MapEditView extends Component {
         });
     }
 
+    windowResize(e) {
+        const ds = this.drawState;
+        const image = document.getElementById("floorplan");
+        setTimeout(() => {
+            ds.canvas.height = image.offsetHeight;
+            ds.canvas.width = image.offsetWidth;
+            this.setState({
+                routerInputWidth: ds.canvas.width,
+                routerInputHeight: ds.canvas.height
+            });
+        }, 10);
+        this.loadPolygons(this.props);
+        this.loadRouters(this.props);
+        this.loadTraining(this.props);
+    }
+
     toggleSnap() {
         this.setState({snapEnabled: !this.state.snapEnabled});
     }
@@ -247,12 +264,14 @@ class MapEditView extends Component {
         this.loadRouters(this.props);
         this.loadTraining(this.props);
         this.switchToMode(EditMode.DRAW);
+        window.addEventListener("resize", this.windowResize);
     }
 
     componentWillUnmount() {
         this.switchToMode(null);
         clearTimeout(this.drawState.messageTimeout);
         this.drawState.messageTimeout = null;
+        window.removeEventListener("resize", this.windowResize);
     }
 
     componentWillReceiveProps(newProps) {
@@ -593,8 +612,8 @@ class MapEditView extends Component {
 
     drawMoveEventHandler(e) {
         const ds = this.drawState;
-        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
-        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        const x = e.clientX - ds.canvas.offsetLeft - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.offsetTop - ds.canvas.parentElement.offsetTop;
         const point = this.state.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
         const coords = e.shiftKey ? this.getAxisAlignedCoord(ds.lastPoint, point, 45) : point;
         ds.ctx.clearRect(0, 0, ds.canvas.width, ds.canvas.height);
@@ -646,8 +665,8 @@ class MapEditView extends Component {
 
     drawClickEventHandler(e) {
         const ds = this.drawState;
-        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
-        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        const x = e.clientX - ds.canvas.offsetLeft - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.offsetTop - ds.canvas.parentElement.offsetTop;
         const target = e.target;
         const shiftKey = e.shiftKey;
         setTimeout(() => {
@@ -688,8 +707,8 @@ class MapEditView extends Component {
 
     selectMoveEventHandler(e) {
         const ds = this.drawState;
-        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
-        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        const x = e.clientX - ds.canvas.offsetLeft - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.offsetTop - ds.canvas.parentElement.offsetTop;
         let newHoverVert = null;
         if(!ds.mouseDown) {
             let hoverMinDist = SNAP_THRESHOLD * SNAP_THRESHOLD;
@@ -739,8 +758,8 @@ class MapEditView extends Component {
 
     selectMouseDownEventHandler(e) {
         const ds = this.drawState;
-        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
-        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        const x = e.clientX - ds.canvas.offsetLeft - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.offsetTop - ds.canvas.parentElement.offsetTop;
         if(ds.hoverVert) {
             if(ds.selectedVerts.indexOf(ds.hoverVert) === -1) {
                 if(!e.shiftKey && !e.ctrlKey) {
@@ -826,8 +845,8 @@ class MapEditView extends Component {
 
     routersMoveEventHandler(e) {
         const ds = this.drawState;
-        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
-        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        const x = e.clientX - ds.canvas.offsetLeft - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.offsetTop - ds.canvas.parentElement.offsetTop;
         const point = this.state.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
         const coords = e.shiftKey ? this.getAxisAlignedCoord(ds.lastPoint, point, 45) : point;
         let hovering = false;
@@ -865,8 +884,8 @@ class MapEditView extends Component {
 
     routersClickEventHandler(e) {
         const ds = this.drawState;
-        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
-        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        const x = e.clientX - ds.canvas.offsetLeft - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.offsetTop - ds.canvas.parentElement.offsetTop;
         const point = this.state.snapEnabled ? this.snapToClosestVertex(new Point(x, y)) : new Point(x, y);
         const coords = e.shiftKey ? this.getAxisAlignedCoord(ds.lastPoint, point, 45) : point;
         let clickedRouter = null;
@@ -887,8 +906,8 @@ class MapEditView extends Component {
             this.redraw();
             this.setState({
                 routerInputVisible: true,
-                routerInputX: coords.x,
-                routerInputY: coords.y,
+                routerInputX: coords.x + ds.canvas.offsetLeft,
+                routerInputY: coords.y + ds.canvas.offsetTop,
                 selectedRouter: ds.routersPositions.length-1,
                 routerInputBssid: ds.routersPositions[ds.routersPositions.length-1].bssid,
                 routerInputSsid: ds.routersPositions[ds.routersPositions.length-1].ssid,
@@ -898,8 +917,8 @@ class MapEditView extends Component {
         else {
             this.setState({
                 routerInputVisible: true,
-                routerInputX: ds.routersPositions[clickedRouter].x,
-                routerInputY: ds.routersPositions[clickedRouter].y,
+                routerInputX: ds.routersPositions[clickedRouter].x + ds.canvas.offsetLeft,
+                routerInputY: ds.routersPositions[clickedRouter].y + ds.canvas.offsetTop,
                 selectedRouter: clickedRouter,
                 routerInputBssid: ds.routersPositions[clickedRouter].bssid,
                 routerInputSsid: ds.routersPositions[clickedRouter].ssid,
@@ -910,8 +929,8 @@ class MapEditView extends Component {
 
     collectClickEventHandler(e) {
         const ds = this.drawState;
-        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
-        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        const x = e.clientX - ds.canvas.offsetLeft - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.offsetTop - ds.canvas.parentElement.offsetTop;
         
         this.showMessage("Collecting Data", 10000);
         new Promise((resolve, reject) => {
@@ -945,16 +964,16 @@ class MapEditView extends Component {
 
     scaleMouseDownEventHandler(e) {
         const ds = this.drawState;
-        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
-        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        const x = e.clientX - ds.canvas.offsetLeft - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.offsetTop - ds.canvas.parentElement.offsetTop;
         
         ds.scaleSegment = [{x, y}];
     }
 
     scaleMouseMoveEventHandler(e) {
         const ds = this.drawState;
-        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
-        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        const x = e.clientX - ds.canvas.offsetLeft - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.offsetTop - ds.canvas.parentElement.offsetTop;
 
         if(ds.scaleSegment.length === 1) {
             this.redraw();
@@ -968,15 +987,15 @@ class MapEditView extends Component {
 
     scaleMouseUpEventHandler(e) {
         const ds = this.drawState;
-        const x = e.clientX - ds.canvas.parentElement.offsetLeft;
-        const y = e.clientY - ds.canvas.parentElement.offsetTop;
+        const x = e.clientX - ds.canvas.offsetLeft - ds.canvas.parentElement.offsetLeft;
+        const y = e.clientY - ds.canvas.offsetTop - ds.canvas.parentElement.offsetTop;
 
         if(ds.scaleSegment.length === 1) {
             ds.scaleSegment.push({x, y});
             this.setState({
                 scaleInputVisible: true,
-                routerInputX: x,
-                routerInputY: y,
+                routerInputX: x + ds.canvas.offsetLeft,
+                routerInputY: y + ds.canvas.offsetTop,
                 selectedRouter: ds.routersPositions.length-1,
             });
             document.getElementById("scale").focus();

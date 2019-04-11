@@ -44,7 +44,7 @@ class ScaleInputForm extends Component {
         const containerWidth = props.width;
         const containerHeight = props.height;
         const formWidth = 176;
-        const formHeight = 172;
+        const formHeight = 116;
         let fx = props.x - formWidth / 2;
         let fy = props.y + 15;
         let arrowX = formWidth / 2;
