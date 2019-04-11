@@ -93,20 +93,22 @@ class ScaleInputForm extends Component {
                             style={arrowStyle}
                             />
                         <TextInput label="Scale (m)" name="scale" value={""} />
-                        <button
-                            className="button"
-                            onClick={this.save}
-                            tabIndex={0}
-                            >
-                            OK
-                        </button>
-                        <button
-                            className="link-button cancelButton"
-                            onClick={this.props.cancel}
-                            tabIndex={0}
-                            >
-                            Cancel
-                        </button>
+                        <div className="actions">
+                            <button
+                                className="button"
+                                onClick={this.save}
+                                tabIndex={0}
+                                >
+                                OK
+                            </button>
+                            <button
+                                className="link-button cancelButton"
+                                onClick={this.props.cancel}
+                                tabIndex={0}
+                                >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
 

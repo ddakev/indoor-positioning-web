@@ -95,20 +95,22 @@ class RouterInputForm extends Component {
                             />
                         <TextInput label="SSID" name="ssid" value={this.props.ssid} />
                         <TextInput label="BSSID" name="bssid" value={this.props.bssid} />
-                        <button
-                            className="button"
-                            onClick={this.save}
-                            tabIndex={0}
-                            >
-                            OK
-                        </button>
-                        <button
-                            className="link-button cancelButton"
-                            onClick={this.props.cancel}
-                            tabIndex={0}
-                            >
-                            Cancel
-                        </button>
+                        <div className="actions">
+                            <button
+                                className="button"
+                                onClick={this.save}
+                                tabIndex={0}
+                                >
+                                OK
+                            </button>
+                            <button
+                                className="link-button cancelButton"
+                                onClick={this.props.cancel}
+                                tabIndex={0}
+                                >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
 
