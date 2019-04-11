@@ -82,6 +82,8 @@ class MapEditView extends Component {
         this.scaleMouseUpEventHandler = this.scaleMouseUpEventHandler.bind(this);
         this.saveRouterInfo = this.saveRouterInfo.bind(this);
         this.cancelRouterInfo = this.cancelRouterInfo.bind(this);
+        this.saveScale = this.saveScale.bind(this);
+        this.cancelScale = this.cancelScale.bind(this);
         this.updateFloorplan = this.updateFloorplan.bind(this);
         this.importFloorplan = this.importFloorplan.bind(this);
         this.goBack = this.goBack.bind(this);
@@ -1021,15 +1023,15 @@ class MapEditView extends Component {
         ds.scaleX = pixelScale * ds.canvas.offsetWidth; // in meters per width
         ds.scaleY = pixelScale * ds.canvas.offsetHeight; // in meters per height
         console.log(ds.scaleX, ds.scaleY);
+        this.setState({
+            scaleInputVisible: false,
+        });
     }
 
     cancelScale() {
         const ds = this.drawState;
         ds.scaleSegment = [];
         this.redraw();
-        this.setState({
-            scaleInputVisible: false,
-        });
     }
 
     isPointInsidePolygon(point, poly) {
