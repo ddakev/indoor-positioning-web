@@ -103,6 +103,10 @@ class MapEditView extends Component {
     }
 
     save() {
+        if(this.drawState.scaleSegment.length !== 2) {
+            this.showMessage("You need to set a scale", 5000);
+            return;
+        }
         let updatePromise = null;
         if(this.drawState.polygons.length > 0) {
             const geofences = {"boundaries": this.drawState.polygons.map(poly => {
@@ -292,9 +296,13 @@ class MapEditView extends Component {
     }
     
     importFloorplan() {
-        if(!this.state.floorplanUpload) return new Promise(resolve => resolve());
+        if(!this.state.floorplanUpload && this.drawState.scaleX === this.props.floorplan.xScale && this.drawState.scaleY === this.props.floorplan.yScale) return new Promise(resolve => resolve());
         let fd = new FormData();
-        fd.append("floorplan", this.state.floorplanUpload);
+        if(this.state.floorplanUpload) {
+            fd.append("floorplan", this.state.floorplanUpload);
+        }
+        fd.append("xScale", this.drawState.scaleX);
+        fd.append("yScale", this.drawState.scaleY);
         const fileUpload = new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.onreadystatechange = () => {
@@ -456,11 +464,13 @@ class MapEditView extends Component {
     loadFloorplan(props) {
         if(!props.floorplan) return;
         const floorplan = document.getElementById("floorplan");
-        floorplan.setAttribute('src', props.floorplan);
+        floorplan.setAttribute('src', props.floorplan.imgData);
         floorplan.onload = () => {
             const ds = this.drawState;
             ds.canvas.height = floorplan.offsetHeight;
             ds.canvas.width = floorplan.offsetWidth;
+            ds.scaleX = this.props.floorplan.xScale;
+            ds.scaleY = this.props.floorplan.yScale;
             this.setState({
                 routerInputWidth: this.drawState.canvas.width,
                 routerInputHeight: this.drawState.canvas.height
@@ -1032,6 +1042,9 @@ class MapEditView extends Component {
         const ds = this.drawState;
         ds.scaleSegment = [];
         this.redraw();
+        this.setState({
+            scaleInputVisible: false,
+        });
     }
 
     isPointInsidePolygon(point, poly) {
@@ -1204,7 +1217,7 @@ class MapEditView extends Component {
                         </div>
                     </div>
                     <div className="mapContainer">
-                        <img src={this.props.floorplan} id="floorplan" alt="Floorplan" />
+                        <img src={this.props.floorplan !== null ? this.props.floorplan.imgData : null} id="floorplan" alt="Floorplan" />
                         <canvas
                             className={"mapEditCanvas" + (this.state.editMode === EditMode.DRAW ? " draw" : " select")}
                             tabIndex="-1"

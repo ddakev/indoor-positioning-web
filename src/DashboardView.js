@@ -98,7 +98,7 @@ class DashboardView extends Component {
                     data={this.props.employeeData.filter(this.state.filter)}
                     selectedId={this.state.selectedId}
                     onSelectedChange={this.changeSelectedId}
-                    floorplan={this.props.floorplan}
+                    floorplan={this.props.floorplan.imgData}
                     />
                 : <div
                     className="mapPlaceholder"

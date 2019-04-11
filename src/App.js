@@ -55,7 +55,7 @@ class App extends Component {
     floorxhr.onreadystatechange = () => {
       if(floorxhr.readyState === 4) {
         if(floorxhr.status === 200) {
-          this.setState({floorplan: JSON.parse(floorxhr.responseText).imgData});
+          this.setState({floorplan: JSON.parse(floorxhr.responseText)});
         }
         else {
           this.setState({floorplan: null});
