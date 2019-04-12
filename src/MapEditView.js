@@ -64,8 +64,8 @@ class MapEditView extends Component {
             collectedSamples: [],
             messageTimeout: null,
             scaleSegment: [],
-            scaleX: 1,
-            scaleY: 1,
+            scaleX: null,
+            scaleY: null,
         };
         this.drawClickEventHandler = this.drawClickEventHandler.bind(this);
         this.drawMoveEventHandler = this.drawMoveEventHandler.bind(this);
@@ -104,7 +104,7 @@ class MapEditView extends Component {
     }
 
     save() {
-        if(this.drawState.scaleSegment.length !== 2) {
+        if(this.drawState.scaleX === null || this.drawState.scaleY === null) {
             this.showMessage("You need to set a scale", 5000);
             return;
         }
@@ -299,6 +299,8 @@ class MapEditView extends Component {
                 const ds = this.drawState;
                 ds.canvas.height = floorplan.offsetHeight;
                 ds.canvas.width = floorplan.offsetWidth;
+                ds.scaleX = null;
+                ds.scaleY = null;
                 this.setState({
                     routerInputWidth: this.drawState.canvas.width,
                     routerInputHeight: this.drawState.canvas.height
@@ -947,7 +949,7 @@ class MapEditView extends Component {
             };
             xhr.open('POST', config.api + "/training/add/label");
             xhr.setRequestHeader("Content-type", "application/json");
-            xhr.send(JSON.stringify({x: x, y: y}));
+            xhr.send(JSON.stringify({x: x / this.drawState.canvas.offsetWidth, y: y / this.drawState.canvas.offsetHeight}));
         }).then(() => {
             this.showMessage("Data collected.", 1000);
             ds.collectedSamples.push({
@@ -955,6 +957,7 @@ class MapEditView extends Component {
                 y: y,
                 wifiScan: null,
             });
+            this.redraw();
         }).catch(err => {
             this.showMessage(err, 5000);
         });
