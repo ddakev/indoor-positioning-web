@@ -4,7 +4,7 @@ import './MapIndicator.css';
 class MapIndicator extends Component {
     render() {
         const inlineStyle = {
-            bottom: this.props.y * 100 + "%",
+            top: this.props.y * 100 + "%",
             left: this.props.x * 100 + "%"
         };
         const hiddenClass = this.props.selected ? "" : " hidden";
