@@ -51,13 +51,13 @@ class EmployeeRow extends Component {
                     <td>{this.props.name}</td>
                     <td>{this.props.id}</td>
                     <td>
-                        <StatusIndicator available={this.state.hardhat ? true : false} status={this.state.hardhat && (this.state.hardhat.isWorn || this.state.hardhat.inSafeArea)} />
+                        <StatusIndicator available={this.state.hardhat ? true : false} status={this.state.hardhat && this.state.hardhat.safetyStatus === "safe"} />
                     </td>
                     <td>
-                        <StatusIndicator available={this.state.leftBoot ? true : false}  status={this.state.leftBoot && (this.state.leftBoot.isWorn || this.state.leftBoot.inSafeArea)} />
+                        <StatusIndicator available={this.state.leftBoot ? true : false}  status={this.state.leftBoot && this.state.leftBoot.safetyStatus === "safe"} />
                     </td>
                     <td>
-                        <StatusIndicator available={this.state.rightBoot ? true : false}  status={this.state.rightBoot && (this.state.rightBoot.isWorn || this.state.rightBoot.inSafeArea)} />
+                        <StatusIndicator available={this.state.rightBoot ? true : false}  status={this.state.rightBoot && this.state.rightBoot.safetyStatus === "safe"} />
                     </td>
                 </label>
         );

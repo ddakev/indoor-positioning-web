@@ -12,10 +12,7 @@ class Map extends Component {
                         this.props.data.map((employee, index) => {
                             let items = [];
                             for(let i=0; i<employee.equips.length; i++) {
-                                let safety = "safe";
-                                if(!employee.equips[i].isWorn && !employee.equips[i].inSafeArea) {
-                                    safety = "danger";
-                                }
+                                let safety = employee.equips[i].safetyStatus;
                                 items.push(
                                     <MapIndicator
                                         x={employee.equips[i].latestX}
