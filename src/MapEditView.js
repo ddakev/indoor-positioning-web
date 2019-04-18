@@ -1221,12 +1221,14 @@ class MapEditView extends Component {
                             className={"button-toolbox" + (this.state.editMode === EditMode.COLLECT ? " selected" : "")}
                             onClick={() => this.switchToMode(EditMode.COLLECT)}
                             >
+                            <img src="train.svg" alt="Train" />
                             Train
                         </div>
                         <div
                             className={"button-toolbox" + (this.state.editMode === EditMode.SCALE ? " selected" : "")}
                             onClick={() => this.switchToMode(EditMode.SCALE)}
                             >
+                            <img src="scale.svg" alt="Scale" />
                             Set Scale
                         </div>
                         <div className="toolbox-divider" />
