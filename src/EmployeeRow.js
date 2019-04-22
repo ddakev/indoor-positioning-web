@@ -40,9 +40,9 @@ class EmployeeRow extends Component {
     }
 
     componentWillReceiveProps(newProps) {
-        if(newProps.equipments !== this.props.equipments) {
+        //if(newProps.equipments !== this.props.equipments) {
             this.updateEquipments(newProps);
-        }
+        //}
     }
 
     render() {
